@@ -17,7 +17,7 @@ ffmpeg -y -f lavfi -i anullsrc=r=44100:cl=stereo -t 1 -q:a 9 assets/placeholder/
 # 1-second black 720x1280 mp4 (portrait)
 ffmpeg -y -f lavfi -i color=c=black:s=720x1280:d=1 -c:v libx264 -pix_fmt yuv420p -movflags +faststart assets/placeholder/blank.mp4
 # 1x1 transparent png
-ffmpeg -y -f lavfi -i color=c=00000000:s=1x1:d=1 -frames:v 1 -update 1 assets/placeholder/transparent.png
+ffmpeg -y -f lavfi -i color=c=00000000:s=1x1:d=1 -frames:v 1 -update 1 -pix_fmt rgba assets/placeholder/transparent.png
 
 # SFX placeholders (silent for now — adult can replace with real chime/pop)
 cp assets/placeholder/silent.mp3 assets/sfx/sparkle.mp3
