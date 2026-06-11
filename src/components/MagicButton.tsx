@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -54,7 +54,9 @@ export const MagicButton: React.FC = () => {
           { backgroundColor: theme.buttonColor },
           animated,
         ]}
-      />
+      >
+        <Text style={styles.label} allowFontScaling={false}>Ava</Text>
+      </Animated.View>
     </Pressable>
   );
 };
@@ -75,10 +77,21 @@ const styles = StyleSheet.create({
     borderRadius: SIZE / 2,
     borderWidth: 4,
     borderColor: 'rgba(255,255,255,0.85)',
+    alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#000',
     shadowOpacity: 0.35,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
     elevation: 8,
+  },
+  label: {
+    color: '#fff',
+    fontSize: 32,
+    fontWeight: '800',
+    letterSpacing: 1,
+    textShadowColor: 'rgba(0,0,0,0.45)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
 });
