@@ -81,7 +81,8 @@ export const AdultPanel: React.FC = () => {
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <View style={styles.backdrop}>
           <View style={styles.panel} onTouchStart={resetDismissTimer}>
-            <Text style={styles.title}>Adult Settings</Text>
+            <Text style={styles.title}>Ava's App</Text>
+            <Text style={styles.tagline}>Made just for Ava</Text>
 
             <Text style={styles.label}>Audio</Text>
             <View style={styles.row}>
@@ -144,7 +145,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: '#1c1c1e',
   },
-  title: { color: '#fff', fontSize: 18, fontWeight: '600', marginBottom: 12 },
+  title: { color: '#fff', fontSize: 20, fontWeight: '700' },
+  tagline: { color: '#aaa', fontSize: 12, marginTop: 2, marginBottom: 8, fontStyle: 'italic' },
   label: { color: '#aaa', fontSize: 12, marginTop: 12, marginBottom: 6, textTransform: 'uppercase' },
   row: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   radio: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, backgroundColor: '#2c2c2e' },
