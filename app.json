@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "AvieBaby",
+    "slug": "aviebaby",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.thewanderer.aviebaby",
+      "infoPlist": {
+        "UIBackgroundModes": []
+      }
+    },
+    "android": {
+      "package": "com.thewanderer.aviebaby",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png",
+        "backgroundColor": "#000000"
+      }
+    },
+    "plugins": [
+      "expo-video",
+      "expo-audio"
+    ],
+    "assetBundlePatterns": ["assets/**/*"]
+  }
+}

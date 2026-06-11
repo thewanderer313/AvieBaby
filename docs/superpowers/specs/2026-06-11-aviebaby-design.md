@@ -54,7 +54,7 @@ Three modes, set by the adult:
 
 Default is **Silent** on first install so an adult is never surprised in public. The choice persists across launches via `AsyncStorage`.
 
-Theme changes always crossfade music (1s fade out, 1s fade in).
+Theme changes swap music instantly (v1; future: 1s crossfade).
 
 ## Adult controls (hidden)
 
