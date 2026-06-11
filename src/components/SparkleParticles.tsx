@@ -1,12 +1,6 @@
-import React, { useEffect } from 'react';
-import { Dimensions, StyleSheet } from 'react-native';
-import {
-  Canvas,
-  Circle,
-  Group,
-  useClock,
-} from '@shopify/react-native-skia';
-import { useDerivedValue, useSharedValue } from 'react-native-reanimated';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet } from 'react-native';
+import { Canvas, Circle, Group } from '@shopify/react-native-skia';
 
 export interface Particle {
   id: number;
@@ -15,80 +9,95 @@ export interface Particle {
   vx: number;
   vy: number;
   color: string;
+  /** ms since some shared origin (we use Date.now()) */
   bornAt: number;
   lifetimeMs: number;
 }
-
-const MAX_PARTICLES = 200;
-const GRAVITY = 80; // px/s^2
 
 export interface SparkleParticlesHandle {
   emit: (x: number, y: number, color: string) => void;
 }
 
+const MAX_PARTICLES = 200;
+const GRAVITY = 80; // px/s^2
+
 interface Props {
   particlesRef: React.MutableRefObject<Particle[]>;
 }
 
+/**
+ * Renders particles from a parent-owned ref. Runs a JS-thread requestAnimationFrame
+ * loop that advances physics, culls dead particles, and triggers a re-render so the
+ * Skia canvas repaints. The ref pattern lets the parent push new particles without
+ * paying for a setState per emit (drags fire many emits per frame).
+ */
 export const SparkleParticles: React.FC<Props> = ({ particlesRef }) => {
-  const clock = useClock();
-  const lastTime = useSharedValue(0);
-  const tick = useSharedValue(0);
+  // tick is incremented every animation frame to force a re-render
+  // even though the actual particle data lives in a ref. The number value is
+  // not consumed; only its identity change matters.
+  const [, setTick] = useState(0);
 
-  const _ = useDerivedValue(() => {
-    const now = clock.value;
-    const dt = lastTime.value === 0 ? 0 : (now - lastTime.value) / 1000;
-    lastTime.value = now;
+  useEffect(() => {
+    let cancelled = false;
+    let last = performance.now();
 
-    const list = particlesRef.current;
-    const alive: Particle[] = [];
-    for (const p of list) {
-      const age = now - p.bornAt;
-      if (age > p.lifetimeMs) continue;
-      p.vy += GRAVITY * dt;
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      alive.push(p);
-    }
-    particlesRef.current = alive.slice(-MAX_PARTICLES);
-    tick.value = now;
-    return now;
-  }, [clock, particlesRef]);
+    const step = (now: number) => {
+      if (cancelled) return;
+      const dt = Math.min(0.05, (now - last) / 1000); // clamp to 50ms to avoid jumps on tab restore
+      last = now;
+      const nowEpoch = Date.now();
 
-  return (
-    <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
-      <ParticleLayer particlesRef={particlesRef} tick={tick} />
-    </Canvas>
-  );
-};
+      const src = particlesRef.current;
+      const alive: Particle[] = [];
+      for (let i = 0; i < src.length; i++) {
+        const p = src[i];
+        const age = nowEpoch - p.bornAt;
+        if (age > p.lifetimeMs) continue;
+        p.vy += GRAVITY * dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        alive.push(p);
+      }
+      // Drop oldest first if over the cap.
+      particlesRef.current = alive.length > MAX_PARTICLES
+        ? alive.slice(alive.length - MAX_PARTICLES)
+        : alive;
 
-const ParticleLayer: React.FC<{
-  particlesRef: React.MutableRefObject<Particle[]>;
-  tick: ReturnType<typeof useSharedValue<number>>;
-}> = ({ particlesRef, tick }) => {
-  // Reading tick.value on every frame forces a re-render of this Group.
-  const _t = useDerivedValue(() => tick.value, [tick]);
+      setTick((t) => (t + 1) & 0x7fffffff);
+      raf = requestAnimationFrame(step);
+    };
+
+    let raf = requestAnimationFrame(step);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+    };
+  }, [particlesRef]);
+
   const list = particlesRef.current;
-  const now = Date.now();
+  const nowEpoch = Date.now();
+
   return (
-    <Group>
-      {list.map((p) => {
-        const age = now - p.bornAt;
-        const lifeFrac = Math.min(1, age / p.lifetimeMs);
-        const r = 6 * (1 - lifeFrac * 0.6);
-        const opacity = 1 - lifeFrac;
-        return (
-          <Circle
-            key={p.id}
-            cx={p.x}
-            cy={p.y}
-            r={r}
-            color={p.color}
-            opacity={opacity}
-          />
-        );
-      })}
-    </Group>
+    <Canvas style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
+      <Group>
+        {list.map((p) => {
+          const age = nowEpoch - p.bornAt;
+          const lifeFrac = age <= 0 ? 0 : Math.min(1, age / p.lifetimeMs);
+          const r = 6 * (1 - lifeFrac * 0.6);
+          const opacity = 1 - lifeFrac;
+          return (
+            <Circle
+              key={p.id}
+              cx={p.x}
+              cy={p.y}
+              r={r}
+              color={p.color}
+              opacity={opacity}
+            />
+          );
+        })}
+      </Group>
+    </Canvas>
   );
 };
 
