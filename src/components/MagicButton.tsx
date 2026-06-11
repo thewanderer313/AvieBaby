@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import Animated, {
   Easing,
@@ -16,9 +16,15 @@ export const MagicButton: React.FC = () => {
   const { theme, advance } = useTheme();
   const { onThemeChange, playSparkleSFX } = useAudio();
   const scale = useSharedValue(1);
+  const didMountRef = useRef(false);
 
-  // Keep audio in sync with theme.
+  // AudioProvider already picked an initial track for the first theme,
+  // so we only notify on subsequent theme changes (after the user presses the button).
   useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
     onThemeChange(theme);
   }, [theme, onThemeChange]);
 

@@ -70,7 +70,7 @@ If you add a new character (e.g., "octopus" in Sleepy Ocean), edit `src/themes/T
 2. **Silent mode (default)**: tap and drag — animations work, no audio at all.
 3. Long-press top-left 2s → adult panel opens.
 4. Switch to **Full** audio. Close panel. Tap once → spawn animation + voice label heard + music playing.
-5. Press magic button → music crossfades, video swaps, button color changes.
+5. Press magic button → music swaps to the new theme, video swaps, button color changes.
 6. Long-press top-left → audio still set to Full. Press Exit → confirm → app closes.
 7. Reopen the app → audio mode is still Full (persisted).
 8. Press magic button rapidly → no crashes.

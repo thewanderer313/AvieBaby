@@ -25,7 +25,10 @@ export const AudioProvider: React.FC<{ initialTheme: Theme; children: React.Reac
   const controllerRef = useRef(new AudioController('silent'));
   const duckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [mode, setModeState] = useState<AudioMode>('silent');
-  const [currentMusicSource, setCurrentMusicSource] = useState<number>(initialTheme.music[0]);
+  const [currentMusicSource, setCurrentMusicSource] = useState<number>(() => {
+    const idx = controllerRef.current.pickTrackIndex(initialTheme.id);
+    return initialTheme.music[idx];
+  });
   const musicPlayer = useAudioPlayer(currentMusicSource);
 
   // Hydrate audio mode from storage on mount.

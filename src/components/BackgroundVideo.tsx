@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { StyleSheet } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useTheme } from '../themes/ThemeProvider';
@@ -10,9 +10,15 @@ export const BackgroundVideo: React.FC = () => {
     p.muted = true;
     p.play();
   });
+  const didMountRef = useRef(false);
 
-  // When theme changes, swap source.
+  // useVideoPlayer's setup callback handles the initial source.
+  // Only swap on subsequent theme changes.
   useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
     if (!player) return;
     player.replace(theme.video);
     player.muted = true;
