@@ -8,6 +8,7 @@ import { BackgroundVideo } from './src/components/BackgroundVideo';
 import { PlaySurface } from './src/components/PlaySurface';
 import { MagicButton } from './src/components/MagicButton';
 import { AdultPanel } from './src/components/AdultPanel';
+import { Greeting } from './src/components/Greeting';
 import { THEMES } from './src/themes/ThemeRegistry';
 
 function Root() {
@@ -19,6 +20,7 @@ function Root() {
         <PlaySurface />
         <MagicButton />
         <AdultPanel />
+        <Greeting />
       </View>
     </AudioProvider>
   );
