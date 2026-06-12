@@ -134,5 +134,36 @@ export function makeBooksRouter(repoRoot: string): Router {
     },
   );
 
+  router.delete('/:id', async (req, res) => {
+    const { id } = req.params;
+    const { confirmation } = req.body as { confirmation?: string };
+
+    const books = listBooks(repoRoot);
+    const book = books.find((b) => b.id === id);
+    if (!book) return res.status(404).json({ error: `Book "${id}" not found.` });
+
+    if (confirmation !== book.title) {
+      return res.status(400).json({
+        error: `Confirmation must match the book title exactly ("${book.title}").`,
+      });
+    }
+
+    const job = createJob();
+    res.json({ jobId: job.id });
+
+    (async () => {
+      try {
+        job.emit({ step: 'delete', status: 'started' });
+        const bookDir = path.join(repoRoot, 'assets', 'books', id);
+        fs.rmSync(bookDir, { recursive: true, force: true });
+        job.emit({ step: 'delete', status: 'succeeded' });
+        await runBookRegister(repoRoot, job.emit);
+        job.finish(true);
+      } catch (err) {
+        job.finish(false, err instanceof Error ? err.message : String(err));
+      }
+    })();
+  });
+
   return router;
 }
