@@ -21,6 +21,8 @@ export const MagicButton: React.FC = () => {
   const rotation = useSharedValue(0);
   const ringScale = useSharedValue(0);
   const ringOpacity = useSharedValue(0);
+  const glowScale = useSharedValue(1);
+  const glowOpacity = useSharedValue(0);
   const didMountRef = useRef(false);
 
   // AudioProvider already picked an initial track for the first theme,
@@ -34,10 +36,12 @@ export const MagicButton: React.FC = () => {
   }, [theme, onThemeChange]);
 
   const onPress = useCallback(() => {
-    // Bounce
+    // Squish → big pop → settle. More dramatic than the previous single bounce
+    // so the press feels physically satisfying.
     scale.value = withSequence(
-      withTiming(1.25, { duration: 120, easing: Easing.out(Easing.cubic) }),
-      withTiming(1.0, { duration: 200 }),
+      withTiming(0.85, { duration: 80, easing: Easing.out(Easing.quad) }),
+      withTiming(1.4, { duration: 220, easing: Easing.out(Easing.back(2)) }),
+      withTiming(1.0, { duration: 220, easing: Easing.inOut(Easing.cubic) }),
     );
 
     // Spin one full turn
@@ -46,6 +50,18 @@ export const MagicButton: React.FC = () => {
       duration: PRESS_DURATION_MS,
       easing: Easing.out(Easing.cubic),
     });
+
+    // Glow halo: brief pulse of theme color behind the button.
+    glowScale.value = 1;
+    glowOpacity.value = 0;
+    glowScale.value = withSequence(
+      withTiming(1.45, { duration: 180, easing: Easing.out(Easing.cubic) }),
+      withTiming(1.65, { duration: 420, easing: Easing.out(Easing.cubic) }),
+    );
+    glowOpacity.value = withSequence(
+      withTiming(0.65, { duration: 120, easing: Easing.out(Easing.cubic) }),
+      withTiming(0, { duration: 520, easing: Easing.out(Easing.cubic) }),
+    );
 
     // Shockwave ring expanding outward
     ringScale.value = 0;
@@ -61,7 +77,7 @@ export const MagicButton: React.FC = () => {
 
     playSparkleSFX();
     advance();
-  }, [advance, scale, rotation, ringScale, ringOpacity, playSparkleSFX]);
+  }, [advance, scale, rotation, ringScale, ringOpacity, glowScale, glowOpacity, playSparkleSFX]);
 
   const buttonStyle = useAnimatedStyle(() => ({
     transform: [
@@ -75,6 +91,11 @@ export const MagicButton: React.FC = () => {
     transform: [{ scale: ringScale.value }],
   }));
 
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: glowOpacity.value,
+    transform: [{ scale: glowScale.value }],
+  }));
+
   return (
     <Pressable
       onPress={onPress}
@@ -82,6 +103,14 @@ export const MagicButton: React.FC = () => {
       hitSlop={20}
       accessibilityLabel="Magic button — change theme"
     >
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.glow,
+          { backgroundColor: theme.buttonColor },
+          glowStyle,
+        ]}
+      />
       <Animated.View
         pointerEvents="none"
         style={[
@@ -121,6 +150,12 @@ const styles = StyleSheet.create({
     height: SIZE,
     borderRadius: SIZE / 2,
     borderWidth: 6,
+  },
+  glow: {
+    position: 'absolute',
+    width: SIZE,
+    height: SIZE,
+    borderRadius: SIZE / 2,
   },
   button: {
     width: SIZE,
