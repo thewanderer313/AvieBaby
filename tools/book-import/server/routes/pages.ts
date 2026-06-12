@@ -7,6 +7,7 @@ import { listBooks } from '../registry.js';
 import { MAX_IMAGE_BYTES, MAX_AUDIO_BYTES, MAX_PAGES } from '../validation.js';
 import { runBookPage, runBookVoice, runBookRegister } from '../pipeline.js';
 import { createJob } from '../jobs.js';
+import { withBookLock } from '../locks.js';
 
 const tmpDir = path.join(os.tmpdir(), 'aviebaby-book-import');
 fs.mkdirSync(tmpDir, { recursive: true });
@@ -31,7 +32,10 @@ export function makePagesRouter(repoRoot: string): Router {
         .sort((a, b) => a.fieldname.localeCompare(b.fieldname));
       const voicesByReader: Record<string, Express.Multer.File[]> = {};
       for (const f of files) {
-        const match = f.fieldname.match(/^voice-([^-]+)-\d+$/);
+        // Greedy capture: voice-<reader-id>-<page-num>. Reader IDs can contain dashes
+        // (e.g., "uncle-ryan"), so we match the page number as the trailing digit
+        // segment and treat everything between "voice-" and "-NN" as the reader id.
+        const match = f.fieldname.match(/^voice-(.+)-(\d+)$/);
         if (match) {
           const rid = match[1];
           if (!voicesByReader[rid]) voicesByReader[rid] = [];
@@ -57,7 +61,7 @@ export function makePagesRouter(repoRoot: string): Router {
       const job = createJob();
       res.json({ jobId: job.id });
 
-      (async () => {
+      withBookLock(bookId, async () => {
         try {
           for (let i = 0; i < pages.length; i++) {
             await runBookPage(
@@ -91,7 +95,7 @@ export function makePagesRouter(repoRoot: string): Router {
         } finally {
           for (const f of files) fs.unlink(f.path, () => {});
         }
-      })();
+      }).catch(() => {/* finish() already reported the error */});
     },
   );
 
@@ -116,7 +120,7 @@ export function makePagesRouter(repoRoot: string): Router {
     const job = createJob();
     res.json({ jobId: job.id });
 
-    (async () => {
+    withBookLock(bookId, async () => {
       try {
         await runBookPage(repoRoot, file.path, bookId, n, null, job.emit);
         await runBookRegister(repoRoot, job.emit);
@@ -126,7 +130,7 @@ export function makePagesRouter(repoRoot: string): Router {
       } finally {
         fs.unlink(file.path, () => {});
       }
-    })();
+    }).catch(() => {/* finish() already reported the error */});
   });
 
   // Replace a single audio file.
@@ -154,7 +158,7 @@ export function makePagesRouter(repoRoot: string): Router {
     const job = createJob();
     res.json({ jobId: job.id });
 
-    (async () => {
+    withBookLock(bookId, async () => {
       try {
         await runBookVoice(
           repoRoot,
@@ -173,7 +177,7 @@ export function makePagesRouter(repoRoot: string): Router {
       } finally {
         fs.unlink(file.path, () => {});
       }
-    })();
+    }).catch(() => {/* finish() already reported the error */});
   });
 
   return router;

@@ -7,6 +7,7 @@ import { listBooks } from '../registry.js';
 import { validateReaderId, MAX_AUDIO_BYTES, MAX_PAGES } from '../validation.js';
 import { runBookVoice, runBookRegister } from '../pipeline.js';
 import { createJob } from '../jobs.js';
+import { withBookLock } from '../locks.js';
 
 const tmpDir = path.join(os.tmpdir(), 'aviebaby-book-import');
 fs.mkdirSync(tmpDir, { recursive: true });
@@ -61,7 +62,7 @@ export function makeReadersRouter(repoRoot: string): Router {
       const job = createJob();
       res.json({ jobId: job.id });
 
-      (async () => {
+      withBookLock(bookId, async () => {
         try {
           for (let i = 0; i < voices.length; i++) {
             const isFirst = i === 0;
@@ -83,7 +84,7 @@ export function makeReadersRouter(repoRoot: string): Router {
         } finally {
           for (const f of voices) fs.unlink(f.path, () => {});
         }
-      })();
+      }).catch(() => {/* finish() already reported the error */});
     },
   );
 

@@ -18,6 +18,7 @@ import {
   runBookRegister,
 } from '../pipeline.js';
 import { createJob } from '../jobs.js';
+import { withBookLock } from '../locks.js';
 
 const tmpDir = path.join(os.tmpdir(), 'aviebaby-book-import');
 fs.mkdirSync(tmpDir, { recursive: true });
@@ -90,7 +91,7 @@ export function makeBooksRouter(repoRoot: string): Router {
       const job = createJob();
       res.json({ jobId: job.id });
 
-      (async () => {
+      withBookLock(fields.bookId, async () => {
         try {
           for (let i = 0; i < pages.length; i++) {
             const pageNum = i + 1;
@@ -130,7 +131,7 @@ export function makeBooksRouter(repoRoot: string): Router {
             fs.unlink(f.path, () => {});
           }
         }
-      })();
+      }).catch(() => {/* finish() already reported the error */});
     },
   );
 
@@ -151,7 +152,7 @@ export function makeBooksRouter(repoRoot: string): Router {
     const job = createJob();
     res.json({ jobId: job.id });
 
-    (async () => {
+    withBookLock(id, async () => {
       try {
         job.emit({ step: 'delete', status: 'started' });
         const bookDir = path.join(repoRoot, 'assets', 'books', id);
@@ -162,7 +163,7 @@ export function makeBooksRouter(repoRoot: string): Router {
       } catch (err) {
         job.finish(false, err instanceof Error ? err.message : String(err));
       }
-    })();
+    }).catch(() => {/* finish() already reported the error */});
   });
 
   router.patch('/:id', async (req, res) => {
@@ -176,26 +177,25 @@ export function makeBooksRouter(repoRoot: string): Router {
     const book = books.find((b) => b.id === id);
     if (!book) return res.status(404).json({ error: `Book "${id}" not found.` });
 
-    const info = loadBookInfo(repoRoot, id);
-    if (typeof title === 'string' && title.length > 0) info.title = title;
-    if (readers && typeof readers === 'object') {
-      for (const [rid, name] of Object.entries(readers)) {
-        if (typeof name === 'string' && name.length > 0) info.readers[rid] = name;
-      }
-    }
-    writeBookInfo(repoRoot, id, info);
-
     const job = createJob();
     res.json({ jobId: job.id });
 
-    (async () => {
+    withBookLock(id, async () => {
       try {
+        const info = loadBookInfo(repoRoot, id);
+        if (typeof title === 'string' && title.length > 0) info.title = title;
+        if (readers && typeof readers === 'object') {
+          for (const [rid, name] of Object.entries(readers)) {
+            if (typeof name === 'string' && name.length > 0) info.readers[rid] = name;
+          }
+        }
+        writeBookInfo(repoRoot, id, info);
         await runBookRegister(repoRoot, job.emit);
         job.finish(true);
       } catch (err) {
         job.finish(false, err instanceof Error ? err.message : String(err));
       }
-    })();
+    }).catch(() => {/* finish() already reported the error */});
   });
 
   return router;
