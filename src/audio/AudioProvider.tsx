@@ -6,6 +6,7 @@ import { loadAudioMode, saveAudioMode } from '../storage/settings';
 
 const SFX_SPARKLE = require('../../assets/sfx/sparkle.mp3');
 const SFX_SPAWN = require('../../assets/sfx/spawn.mp3');
+const GREETING_AUDIO = require('../../assets/greeting.mp3');
 
 interface AudioContextValue {
   mode: AudioMode;
@@ -14,6 +15,7 @@ interface AudioContextValue {
   playSparkleSFX: () => void;
   playSpawnSFX: () => void;
   playVoice: (character: Character) => void;
+  playGreeting: () => void;
 }
 
 const AudioContext = createContext<AudioContextValue | null>(null);
@@ -86,24 +88,36 @@ export const AudioProvider: React.FC<{ initialTheme: Theme; children: React.Reac
     if (controllerRef.current.shouldPlaySFX()) playOneShot(SFX_SPAWN, 0.8);
   }, [playOneShot]);
 
-  const playVoice = useCallback((character: Character) => {
-    if (!controllerRef.current.shouldPlayVoice()) return;
-    // Estimate clip length at 1500ms; controller plans the duck.
-    const plan = controllerRef.current.describeDuck(1500);
-    if (musicPlayer && controllerRef.current.shouldPlayMusic()) {
-      // Cancel any pending restore from a still-in-flight voice clip.
-      if (duckTimerRef.current) {
-        clearTimeout(duckTimerRef.current);
-        duckTimerRef.current = null;
+  const playDuckedAudio = useCallback(
+    (source: number, estimatedDurationMs: number) => {
+      if (!controllerRef.current.shouldPlayVoice()) return;
+      const plan = controllerRef.current.describeDuck(estimatedDurationMs);
+      if (musicPlayer && controllerRef.current.shouldPlayMusic()) {
+        // Cancel any pending restore from a still-in-flight clip.
+        if (duckTimerRef.current) {
+          clearTimeout(duckTimerRef.current);
+          duckTimerRef.current = null;
+        }
+        try { musicPlayer.volume = plan.duckedVolume; } catch {}
+        duckTimerRef.current = setTimeout(() => {
+          duckTimerRef.current = null;
+          try { musicPlayer.volume = 1.0; } catch {}
+        }, plan.fadeDownMs + plan.holdMs + plan.fadeUpMs);
       }
-      try { musicPlayer.volume = plan.duckedVolume; } catch {}
-      duckTimerRef.current = setTimeout(() => {
-        duckTimerRef.current = null;
-        try { musicPlayer.volume = 1.0; } catch {}
-      }, plan.fadeDownMs + plan.holdMs + plan.fadeUpMs);
-    }
-    playOneShot(character.voice, 1.0);
-  }, [musicPlayer, playOneShot]);
+      playOneShot(source, 1.0);
+    },
+    [musicPlayer, playOneShot],
+  );
+
+  const playVoice = useCallback(
+    (character: Character) => playDuckedAudio(character.voice, 1500),
+    [playDuckedAudio],
+  );
+
+  const playGreeting = useCallback(
+    () => playDuckedAudio(GREETING_AUDIO, 3500),
+    [playDuckedAudio],
+  );
 
   useEffect(() => {
     return () => {
@@ -115,8 +129,8 @@ export const AudioProvider: React.FC<{ initialTheme: Theme; children: React.Reac
   }, []);
 
   const value = useMemo<AudioContextValue>(
-    () => ({ mode, setMode, onThemeChange, playSparkleSFX, playSpawnSFX, playVoice }),
-    [mode, setMode, onThemeChange, playSparkleSFX, playSpawnSFX, playVoice],
+    () => ({ mode, setMode, onThemeChange, playSparkleSFX, playSpawnSFX, playVoice, playGreeting }),
+    [mode, setMode, onThemeChange, playSparkleSFX, playSpawnSFX, playVoice, playGreeting],
   );
 
   return <AudioContext.Provider value={value}>{children}</AudioContext.Provider>;

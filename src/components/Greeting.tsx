@@ -9,6 +9,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { useAudio } from '../audio/AudioProvider';
 
 const FADE_IN_MS = 400;
 const HOLD_MS = 1500;
@@ -17,7 +18,9 @@ const FADE_OUT_MS = 700;
 export const Greeting: React.FC = () => {
   const opacity = useSharedValue(0);
   const [done, setDone] = useState(false);
+  const { playGreeting } = useAudio();
 
+  // Animation runs once on mount.
   useEffect(() => {
     opacity.value = withSequence(
       withTiming(1, { duration: FADE_IN_MS, easing: Easing.out(Easing.cubic) }),
@@ -29,6 +32,13 @@ export const Greeting: React.FC = () => {
       ),
     );
   }, [opacity]);
+
+  // Audio runs once on mount, delayed slightly so the audio mode has time
+  // to hydrate from AsyncStorage (initial mode is 'silent' until load completes).
+  useEffect(() => {
+    const audioTimer = setTimeout(playGreeting, 300);
+    return () => clearTimeout(audioTimer);
+  }, [playGreeting]);
 
   const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
