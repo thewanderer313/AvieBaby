@@ -136,9 +136,7 @@ const styles = StyleSheet.create({
     top: 0,
     width: 120,
     height: 120,
-    // Temporary debug tint — confirms hotspot position is reachable. Remove
-    // once the long-press is firing reliably on device.
-    backgroundColor: 'rgba(255, 80, 80, 0.18)',
+    backgroundColor: 'transparent',
   },
   backdrop: {
     flex: 1,
