@@ -104,7 +104,7 @@ All scripts validate inputs and write into the right paths under `assets/`. All 
 ```bash
 npm run start            # Expo dev server
 npm run typecheck        # tsc --noEmit
-npm test                 # jest (20 tests pass currently)
+npm test                 # jest (34 tests pass currently)
 scripts/make-placeholders.sh        # regenerate stub assets (ffmpeg required)
 ```
 
@@ -131,6 +131,7 @@ After Mom approves, switch to the `production` profile, then `eas-cli submit` to
 - **`AppModeProvider` locks orientation via `expo-screen-orientation`.** Play mode is PORTRAIT_UP; book mode is LANDSCAPE_LEFT (counterclockwise so the same physical corner stays usable for the adult-panel hotspot). Don't add other orientation calls elsewhere — keep them centralized in `AppModeProvider`.
 - **`AudioProvider`'s music gate is `appMode === 'play' && shouldPlayMusic()`.** Music does NOT play in book mode regardless of audio mode. If you ever wanted background music *under* a book, that's a deliberate change to this gate.
 - **`AdultPanel` hotspot position is mode-aware.** Portrait: top-left. Landscape (book mode): bottom-left of the screen, which is the same physical corner of the device.
+- **Verify on device: AdultPanel hotspot vs BookGestureSurface in book mode.** The book gesture surface's `LongPress(800ms)` fires on a stationary hold; the AdultPanel hotspot fires at 2000ms. If z-order alone isn't enough to keep the surface's gesture from also tracking the touch when the user's finger lands in the corner, you'd see a spurious page-flip ~1200ms before the panel opens. The existing play-mode pattern (PlaySurface uses Pan, which only activates on movement) doesn't have this risk. If device testing reveals the page-flip, the simplest fix is to split `BookGestureSurface` into two Views with separate gesture detectors that together cover everything EXCEPT the 120×120 corner.
 
 ## Workflow conventions
 
