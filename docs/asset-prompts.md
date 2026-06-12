@@ -62,15 +62,92 @@ tropical funk, marimba, bongo, sax, electric piano, claps, 112 BPM, sunny, playf
 
 ---
 
-## Background video (Veo 3) — coming as you generate
+## Background video (Veo 3)
 
-For each theme:
+### How to generate
 
-- **Sleepy Ocean**: "Slow drifting underwater scene, sun rays from above, gentle current, soft blue-green palette, no fish or text, last frame matches first frame, 8 seconds, seamless loop."
-- **Sparkle Space**: "Slow starfield with drifting nebula clouds, occasional shooting star, deep purple and gold palette, no text or characters, last frame matches first frame, 8 seconds, seamless loop."
-- **Disco Jungle**: "Bright cartoon jungle leaves swaying with shafts of golden light and floating motes, vibrant tropical palette, no characters or text, last frame matches first frame, 8 seconds, seamless loop."
+- **Easiest**: Gemini app or web (`gemini.google.com`). Free tier covers a few generations a day; Gemini Advanced gets you many more.
+- **More control**: Google AI Studio (`aistudio.google.com`) → Veo 3. Lets you set seeds and use negative prompts.
 
-Re-encode after download (per README): `ffmpeg -i input.mp4 -vf "scale=720:-2" -c:v libx264 -crf 26 -preset slow -pix_fmt yuv420p -movflags +faststart -an background.mp4`
+### Critical settings
+
+- **Aspect ratio: 9:16 (portrait)**. The app runs portrait-locked. If Veo gives you 16:9 you'll get letterboxed bars or a stretched picture. Both Gemini and AI Studio expose this before you generate — pick it.
+- **Length: 8 seconds.** Veo 3's default and the sweet spot for a loop.
+- **Style: ambient / no characters.** Each video is a *background*. Characters, text, faces, and any storytelling motion compete with the tap-to-spawn experience. Stay abstract.
+
+### Prompt rules for our use case
+
+A good Veo prompt for a loopable background combines: **subject + motion + palette + framing + lighting + negative constraints**. The order matters less than including all six.
+
+What to AVOID in the prompt (and to add as negatives if available):
+- "people", "characters", "creatures", "faces", "text", "logo", "UI", "title card"
+- "camera pan", "zoom", "dolly" — any directional camera motion makes loops obvious
+- "fast", "explosive", "dramatic" — toddler-calm aesthetic
+
+### Per-theme prompts
+
+**Sleepy Ocean (`assets/themes/sleepy-ocean/background.mp4`)**
+
+```
+Underwater background, calm sunlit kelp forest swaying gently, godrays piercing teal-green water from above, soft particles of plankton drifting, slow ambient motion, dreamy and peaceful, vertical 9:16, no fish, no characters, no text, no camera movement, 8 seconds
+```
+
+**Sparkle Space (`assets/themes/sparkle-space/background.mp4`)**
+
+```
+Slow drifting starfield with soft purple and gold nebula clouds, gentle parallax of distant stars, occasional tiny twinkle, magical ambient atmosphere, vertical 9:16, no text, no characters, no spaceships, no camera movement, 8 seconds
+```
+
+**Disco Jungle (`assets/themes/disco-jungle/background.mp4`)**
+
+```
+Tropical jungle canopy from below, vibrant green leaves swaying in dappled golden sunlight, sparkles of pollen drifting, vivid saturated colors, joyful ambient atmosphere, vertical 9:16, no animals, no characters, no text, no camera movement, 8 seconds
+```
+
+### Post-processing: forcing a seamless loop
+
+Veo's "seamless loop" requests are unreliable. The fix is a 30-second ffmpeg step.
+
+**The workhorse — boomerang (forward + reversed):**
+
+```bash
+ffmpeg -i input.mp4 \
+  -filter_complex "[0:v]reverse[r];[0:v][r]concat=n=2:v=1:a=0[v]" \
+  -map "[v]" \
+  -vf "scale=720:-2" \
+  -c:v libx264 -crf 26 -preset slow -pix_fmt yuv420p -movflags +faststart -an \
+  background.mp4
+```
+
+Plays the 8s clip forward then in reverse → 16s total → loops perfectly because the last frame *is* the first frame. Imperceptible for ambient backgrounds (drifting water, swaying leaves, starfields) because nothing has strong directional motion. Output is small and ready to drop in.
+
+**Fallback — crossfade tail with head (for when boomerang looks weird):**
+
+```bash
+ffmpeg -i input.mp4 \
+  -filter_complex "[0:v]split=2[a][b];[a]trim=0:7,setpts=PTS-STARTPTS[head];[b]trim=7:8,setpts=PTS-STARTPTS[tail];[tail][head]xfade=transition=fade:duration=1:offset=0[v]" \
+  -map "[v]" \
+  -vf "scale=720:-2" \
+  -c:v libx264 -crf 26 -preset slow -pix_fmt yuv420p -movflags +faststart -an \
+  background.mp4
+```
+
+Drops to 7s total but the seam is a soft 1s crossfade.
+
+### Loop verification checklist
+
+- ☐ Output file is < 2 MB
+- ☐ Aspect ratio is taller than wide (720×1280 or similar)
+- ☐ Plays for 5+ continuous seconds in VLC/QuickTime without a visible jump
+- ☐ No audio track (run `ffprobe background.mp4` — should report video stream only)
+- ☐ Filename is exactly `background.mp4` and lives in `assets/themes/<theme>/`
+
+### Common issues
+
+- **Loop "pops" with a visible jump every cycle** → Use the boomerang command above. Don't trust Veo's own loop prompt.
+- **Output is 15+ MB** → CRF too low; bump `-crf 26` to `-crf 28` (smaller file, slightly more compression).
+- **Colors look washed out on phone** → Veo sometimes returns bt.601 color. Add `-colorspace bt709 -color_primaries bt709 -color_trc bt709` before `background.mp4` in the ffmpeg command.
+- **Boomerang reveals directional motion** (e.g., one specific particle reversing visibly) → Regenerate with a more "swirly / random" motion prompt (replace "drifting" with "swirling slowly"), or use the crossfade fallback.
 
 ---
 
