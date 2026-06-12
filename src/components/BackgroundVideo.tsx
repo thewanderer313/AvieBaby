@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useTheme } from '../themes/ThemeProvider';
 
@@ -26,13 +26,19 @@ export const BackgroundVideo: React.FC = () => {
     player.play();
   }, [theme.video, player]);
 
+  // Wrap in a pointerEvents="none" View so the native VideoView doesn't
+  // intercept taps/long-presses meant for PlaySurface, MagicButton, or the
+  // hidden AdultPanel hotspot. With placeholder content this wasn't an
+  // issue, but a real playing video activates the native view's touch handling.
   return (
-    <VideoView
-      style={StyleSheet.absoluteFill}
-      player={player}
-      contentFit="cover"
-      nativeControls={false}
-      allowsPictureInPicture={false}
-    />
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      <VideoView
+        style={StyleSheet.absoluteFill}
+        player={player}
+        contentFit="cover"
+        nativeControls={false}
+        allowsPictureInPicture={false}
+      />
+    </View>
   );
 };
