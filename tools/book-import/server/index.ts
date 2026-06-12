@@ -2,6 +2,7 @@ import express from 'express';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { makeBooksRouter } from './routes/books.js';
+import { makeReadersRouter } from './routes/readers.js';
 import { getJob } from './jobs.js';
 import type { PipelineEvent } from './pipeline.js';
 
@@ -15,6 +16,7 @@ const app = express();
 app.use(express.json());
 
 app.use('/api/books', makeBooksRouter(REPO_ROOT));
+app.use('/api/books/:id/readers', makeReadersRouter(REPO_ROOT));
 
 app.use(
   '/assets/books',
