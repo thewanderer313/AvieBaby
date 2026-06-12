@@ -76,6 +76,37 @@ If you add a new character (e.g., "octopus" in Sleepy Ocean), edit `src/themes/T
 8. Press magic button rapidly → no crashes.
 9. Press Android hardware back button → nothing happens.
 
+## Book mode (v2)
+
+A second mode where the adult picks a picture book and a family-recorded reader. App rotates to landscape; Ava taps to advance pages, long-presses (~1s) to go back, and the book loops at the end. Adult long-press top-left of the physical device (= bottom-left in landscape) for 2 s to access settings or exit back to play mode.
+
+### Adding a book
+
+1. Process the first page with the book's display title:
+   `scripts/book-page.sh --title "Goodnight Moon" <input> goodnight-moon 1`
+   Subsequent pages don't need `--title`.
+2. Process the rest of the pages with `scripts/book-page.sh <input> <book-id> <page-number>`.
+3. For each reader, process the first page with the reader's display name:
+   `scripts/book-voice.sh --reader-name "Uncle Ryan" <input.m4a> goodnight-moon ryan 1`
+   Subsequent pages from the same reader don't need `--reader-name`.
+4. Process the rest of the voice pages with `scripts/book-voice.sh [--keep-tail] <input.m4a> <book-id> <reader-id> <page-number>`.
+5. Optional: `scripts/book-cover.sh <input.jpg> <book-id>` to add a thumbnail.
+6. Regenerate the registry: `node scripts/book-register.js` (or `scripts/book-register.js` directly).
+7. Reload Expo (`r`) and re-test. Run `npm test` to verify the validator passes.
+
+### Book-mode smoke checklist
+
+1. Launch the app — play mode loads as usual.
+2. Long-press top-left for 2 s → adult panel opens.
+3. Tap "Read a book to Ava" → pick a book → pick a reader.
+4. App rotates to landscape, page 1 appears, audio starts.
+5. Tap on the page → page 2 appears, audio cuts over.
+6. Hold (~1 s) on the page → page 1 returns.
+7. Tap through to the last page, tap once more → loops to page 1.
+8. Long-press top-left of the device (= bottom-left of the screen in landscape) for 2 s → adult panel opens with "Exit book" at top.
+9. Tap "Exit book" → returns to portrait + play mode.
+10. Set audio to silent in adult panel, re-enter the book → pages advance on tap but no audio plays.
+
 ## Development
 
 ```bash

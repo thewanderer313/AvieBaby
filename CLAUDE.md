@@ -20,6 +20,7 @@ Done and tested on device:
 - Hidden long-press adult panel with: 4-mode audio toggle, theme jump, in-app pinning/Guided-Access tutorial, two-tap exit
 - Android back-button intercepted, no permissions requested, no network calls
 - "Hi Ava!" launch greeting (text + Ryan's voice) on app open
+- Book mode: adult-enabled second mode that switches to landscape; per-page family voice audio; tap=next, long-press=back; loops at end; AdultPanel "Exit book" button to return to play mode
 
 In flight: **iOS TestFlight build for Mom to review** (see "Next" below).
 
@@ -45,6 +46,8 @@ app.json                             Expo config; bundle id com.thewanderer.avie
 src/
   themes/{types,ThemeRegistry,ThemeProvider}
   audio/{AudioController,AudioProvider}
+  books/{types,BookRegistry,BookProvider}     Static book catalog + page state
+  mode/AppModeProvider                        play | book mode state + orientation lock
   storage/settings                   AsyncStorage wrapper for audio mode
   components/
     BackgroundVideo                  expo-video, wrapped in pointerEvents="none"
@@ -57,6 +60,10 @@ src/
     AdultPanel                       Long-press hotspot + Modal with two views
                                      (settings + lockdown tutorial)
     Greeting                         "Hi Ava!" overlay + audio on launch
+    BookScreen                       Landscape root for book mode
+    BookPage                         Renders one page image + plays its audio
+    BookGestureSurface               tap=next, long-press 800ms=back (corner excluded)
+    PlayScreen                       Wrapper for the original play-mode children
 assets/
   greeting.mp3                       Launch greeting in Ryan's voice
   sfx/{sparkle,spawn}.mp3            Still placeholders — never recorded
@@ -85,6 +92,10 @@ All scripts validate inputs and write into the right paths under `assets/`. All 
 | `voice.sh [--keep-tail] <input> <theme> <char>` | phone recording (m4a/wav/etc) | normalized `assets/themes/<theme>/voices/<char>.mp3` |
 | `greeting.sh [--keep-tail] <input>` | phone recording | `assets/greeting.mp3` |
 | `icon.sh <input.png> [bg-hex]` | 1024×1024 master icon | `assets/icon.png`, `splash-icon.png`, `android-icon-{foreground,background}.png` |
+| `book-page.sh [--title "..."] <input> <book-id> <page>` | one page image | `assets/books/<book>/pages/page-NN.png` (+ updates book.json) |
+| `book-voice.sh [--keep-tail] [--reader-name "..."] <input> <book-id> <reader> <page>` | recording | `assets/books/<book>/voices/<reader>/page-NN.mp3` (+ updates book.json) |
+| `book-cover.sh <input.png> <book-id>` | thumbnail | `assets/books/<book>/cover.png` |
+| `node scripts/book-register.js` | (no args) | (re)generates `src/books/BookRegistry.ts` from filesystem + book.json files |
 
 `--keep-tail` skips end-of-clip silence trim — use it when soft trailing consonants ("-sh", "-th", quiet "...you") get clipped.
 
@@ -117,6 +128,9 @@ After Mom approves, switch to the `production` profile, then `eas-cli submit` to
 - **`scripts/voice.sh` defaults are intentionally forgiving on the tail trim** (-55 dB, 500 ms) so soft endings like "-fish" don't get clipped. If a clip still cuts off, re-run with `--keep-tail`.
 - **The duck-restore timer in `AudioProvider` is cancellable** via `duckTimerRef`. Rapid voice labels (which a toddler will produce) re-cancel and re-schedule the music restore, so the music stays ducked for the union of overlapping voice clips.
 - **`asset-prompts.md` is the source of truth for Suno/Veo/Nano Banana prompts.** Update it whenever you find a prompt that works better.
+- **`AppModeProvider` locks orientation via `expo-screen-orientation`.** Play mode is PORTRAIT_UP; book mode is LANDSCAPE_LEFT (counterclockwise so the same physical corner stays usable for the adult-panel hotspot). Don't add other orientation calls elsewhere — keep them centralized in `AppModeProvider`.
+- **`AudioProvider`'s music gate is `appMode === 'play' && shouldPlayMusic()`.** Music does NOT play in book mode regardless of audio mode. If you ever wanted background music *under* a book, that's a deliberate change to this gate.
+- **`AdultPanel` hotspot position is mode-aware.** Portrait: top-left. Landscape (book mode): bottom-left of the screen, which is the same physical corner of the device.
 
 ## Workflow conventions
 
