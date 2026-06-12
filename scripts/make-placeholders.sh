@@ -23,6 +23,9 @@ ffmpeg -y -f lavfi -i color=c=00000000:s=1x1:d=1 -frames:v 1 -update 1 -pix_fmt 
 cp assets/placeholder/silent.mp3 assets/sfx/sparkle.mp3
 cp assets/placeholder/silent.mp3 assets/sfx/spawn.mp3
 
+# Launch greeting placeholder (silent until adult records one with scripts/greeting.sh)
+cp assets/placeholder/silent.mp3 assets/greeting.mp3
+
 # Per-theme stubs
 for theme in sleepy-ocean sparkle-space disco-jungle; do
   cp assets/placeholder/blank.mp4        assets/themes/$theme/background.mp4
