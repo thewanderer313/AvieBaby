@@ -103,6 +103,10 @@ export async function runBookRegister(
     let stderr = '';
     proc.stdout.on('data', (d) => (stdout += d.toString()));
     proc.stderr.on('data', (d) => (stderr += d.toString()));
+    proc.on('error', (err) => {
+      emit({ step: 'register', status: 'failed', stderr: err.message });
+      reject(err);
+    });
     proc.on('close', (code) => {
       if (code === 0) {
         emit({ step: 'register', status: 'succeeded', stdout });
