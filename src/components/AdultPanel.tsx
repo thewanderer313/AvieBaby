@@ -189,7 +189,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
 
     <Text style={styles.label}>Audio</Text>
     <View style={styles.row}>
-      {(['silent', 'gentle', 'full'] as AudioMode[]).map((m) => (
+      {(['silent', 'gentle', 'music', 'full'] as AudioMode[]).map((m) => (
         <Pressable
           key={m}
           style={[styles.radio, mode === m && styles.radioActive]}
