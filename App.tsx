@@ -4,9 +4,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import { ThemeProvider, useTheme } from './src/themes/ThemeProvider';
 import { AudioProvider } from './src/audio/AudioProvider';
-import { BackgroundVideo } from './src/components/BackgroundVideo';
-import { PlaySurface } from './src/components/PlaySurface';
-import { MagicButton } from './src/components/MagicButton';
+import { PlayScreen } from './src/components/PlayScreen';
 import { AdultPanel } from './src/components/AdultPanel';
 import { Greeting } from './src/components/Greeting';
 import { THEMES } from './src/themes/ThemeRegistry';
@@ -16,9 +14,7 @@ function Root() {
   return (
     <AudioProvider initialTheme={theme}>
       <View style={styles.root}>
-        <BackgroundVideo />
-        <PlaySurface />
-        <MagicButton />
+        <PlayScreen />
         <AdultPanel />
         <Greeting />
       </View>
