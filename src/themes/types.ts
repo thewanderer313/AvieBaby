@@ -1,6 +1,13 @@
 // src/themes/types.ts
 
-export type AudioMode = 'silent' | 'gentle' | 'full';
+/**
+ * silent — no audio at all
+ * gentle — sound effects + family voice labels, no music
+ * music  — Suno music + sound effects, voices are muted (for visitors who'd
+ *          rather not hear the family voice on repeat)
+ * full   — everything: music + sound effects + voice labels
+ */
+export type AudioMode = 'silent' | 'gentle' | 'music' | 'full';
 
 export interface Character {
   /** Stable id used as map key (e.g., 'whale'). */

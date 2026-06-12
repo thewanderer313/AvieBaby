@@ -45,6 +45,13 @@ describe('AudioController', () => {
       expect(c.shouldPlayVoice()).toBe(true);
     });
 
+    test('music mode: music + SFX yes, voice no', () => {
+      const c = new AudioController('music');
+      expect(c.shouldPlayMusic()).toBe(true);
+      expect(c.shouldPlaySFX()).toBe(true);
+      expect(c.shouldPlayVoice()).toBe(false);
+    });
+
     test('full mode: all three yes', () => {
       const c = new AudioController('full');
       expect(c.shouldPlayMusic()).toBe(true);
@@ -55,6 +62,9 @@ describe('AudioController', () => {
     test('setMode changes behavior', () => {
       const c = new AudioController('silent');
       c.setMode('full');
+      expect(c.shouldPlayMusic()).toBe(true);
+      c.setMode('music');
+      expect(c.shouldPlayVoice()).toBe(false);
       expect(c.shouldPlayMusic()).toBe(true);
     });
   });

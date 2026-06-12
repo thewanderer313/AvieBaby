@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AudioMode } from '../themes/types';
 
 const KEY_AUDIO_MODE = 'aviebaby.audioMode';
-const VALID: ReadonlySet<AudioMode> = new Set(['silent', 'gentle', 'full']);
+const VALID: ReadonlySet<AudioMode> = new Set(['silent', 'gentle', 'music', 'full']);
 
 export async function loadAudioMode(): Promise<AudioMode> {
   const raw = await AsyncStorage.getItem(KEY_AUDIO_MODE);

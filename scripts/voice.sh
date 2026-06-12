@@ -3,34 +3,47 @@
 # mp3 voice label and drop it in the right theme folder.
 #
 # Usage:
-#   scripts/voice.sh <input-recording> <theme> <character>
+#   scripts/voice.sh [--keep-tail] <input-recording> <theme> <character>
+#
+# Flags:
+#   --keep-tail   Skip end-of-clip silence trimming. Use for recordings where
+#                 a soft trailing consonant (like the "-sh" in "starfish") is
+#                 being clipped even with the default forgiving threshold.
+#                 Loudness normalization still runs, so the clip blends fine.
 #
 # Examples:
-#   scripts/voice.sh ~/Desktop/whale.m4a       sleepy-ocean  whale
-#   scripts/voice.sh ~/Desktop/jellyfish.m4a   sleepy-ocean  jellyfish
-#   scripts/voice.sh ~/Desktop/starfish.m4a    sleepy-ocean  starfish
-#   scripts/voice.sh ~/Desktop/rocket.m4a      sparkle-space rocket
-#   scripts/voice.sh ~/Desktop/alien.m4a       sparkle-space alien
-#   scripts/voice.sh ~/Desktop/comet.m4a       sparkle-space comet
-#   scripts/voice.sh ~/Desktop/banana.m4a      disco-jungle  banana
-#   scripts/voice.sh ~/Desktop/monkey.m4a      disco-jungle  monkey
-#   scripts/voice.sh ~/Desktop/parrot.m4a      disco-jungle  parrot
+#   scripts/voice.sh ~/Desktop/whale.m4a              sleepy-ocean  whale
+#   scripts/voice.sh ~/Desktop/jellyfish.m4a          sleepy-ocean  jellyfish
+#   scripts/voice.sh --keep-tail ~/Desktop/starfish.m4a sleepy-ocean starfish
+#   scripts/voice.sh ~/Desktop/banana.m4a             disco-jungle  banana
 #
 # What it does:
-#   * Strips leading and trailing silence (so the word starts immediately)
+#   * Strips leading silence (so the word starts immediately)
+#   * Strips trailing silence too, unless --keep-tail
 #   * Normalizes loudness to -16 LUFS so every character plays at the same volume
-#   * Re-encodes to mono mp3 at 96 kbps, 44.1 kHz (small file, plenty of fidelity for voice)
+#   * Re-encodes to mono mp3 at 96 kbps, 44.1 kHz
 #   * Writes to assets/themes/<theme>/voices/<character>.mp3 (overwrites)
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-USAGE='Usage: scripts/voice.sh <input-recording> <theme> <character>
+USAGE='Usage: scripts/voice.sh [--keep-tail] <input-recording> <theme> <character>
   <theme>     one of: sleepy-ocean, sparkle-space, disco-jungle
   <character> must match a character id in the chosen theme:
     sleepy-ocean:  whale | jellyfish | starfish
     sparkle-space: rocket | alien | comet
     disco-jungle:  banana | monkey | parrot'
+
+KEEP_TAIL=false
+POSITIONAL=()
+for arg in "$@"; do
+  case "$arg" in
+    --keep-tail) KEEP_TAIL=true ;;
+    -h|--help) echo "$USAGE"; exit 0 ;;
+    *) POSITIONAL+=("$arg") ;;
+  esac
+done
+set -- "${POSITIONAL[@]}"
 
 if [ "$#" -ne 3 ]; then
   echo "$USAGE" >&2
@@ -73,12 +86,18 @@ OUTPUT="assets/themes/$THEME/voices/$CHAR.mp3"
 
 echo "Processing '$INPUT' -> '$OUTPUT' ..."
 
-# silenceremove trims start and end; loudnorm targets -16 LUFS (broadcast voice standard).
-# Start trim is aggressive (-40 dB, 50 ms) so the word starts crisp.
-# Tail trim is intentionally forgiving (-55 dB, 500 ms) so soft trailing
-# consonants like "-sh" in "starfish" or "jellyfish" don't get clipped.
+if [ "$KEEP_TAIL" = "true" ]; then
+  echo "  (--keep-tail: skipping end-of-clip silence trim)"
+  AUDIO_FILTER="silenceremove=start_periods=1:start_silence=0.05:start_threshold=-40dB,loudnorm=I=-16:TP=-1.5:LRA=11"
+else
+  # Tail trim is intentionally forgiving (-55 dB, 500 ms) so soft trailing
+  # consonants like "-sh" in "jellyfish" don't get clipped. If yours still
+  # clip, re-run with --keep-tail.
+  AUDIO_FILTER="silenceremove=start_periods=1:start_silence=0.05:start_threshold=-40dB:stop_periods=1:stop_silence=0.5:stop_threshold=-55dB,loudnorm=I=-16:TP=-1.5:LRA=11"
+fi
+
 ffmpeg -y -i "$INPUT" \
-  -af "silenceremove=start_periods=1:start_silence=0.05:start_threshold=-40dB:stop_periods=1:stop_silence=0.5:stop_threshold=-55dB,loudnorm=I=-16:TP=-1.5:LRA=11" \
+  -af "$AUDIO_FILTER" \
   -ac 1 -ar 44100 -b:a 96k \
   "$OUTPUT"
 

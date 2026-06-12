@@ -24,7 +24,7 @@ export class AudioController {
   }
 
   shouldPlayMusic(): boolean {
-    return this.mode === 'full';
+    return this.mode === 'full' || this.mode === 'music';
   }
 
   shouldPlaySFX(): boolean {
@@ -32,7 +32,7 @@ export class AudioController {
   }
 
   shouldPlayVoice(): boolean {
-    return this.mode !== 'silent';
+    return this.mode === 'gentle' || this.mode === 'full';
   }
 
   /**
