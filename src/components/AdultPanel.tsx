@@ -7,6 +7,8 @@ import {
   View,
   BackHandler,
 } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { runOnJS } from 'react-native-reanimated';
 import { useTheme } from '../themes/ThemeProvider';
 import { useAudio } from '../audio/AudioProvider';
 import { AudioMode } from '../themes/types';
@@ -37,31 +39,19 @@ export const AdultPanel: React.FC = () => {
     if (!open) setConfirmExit(false);
   }, [open]);
 
-  // Manual long-press: setTimeout on touch-down, cancel on touch-up.
-  // Pressable's onLongPress cancels on tiny finger movement during the hold,
-  // which makes a 2s hold unreliable in real-world use.
-  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openPanel = useCallback(() => setOpen(true), []);
 
-  const onHotspotPressIn = useCallback(() => {
-    if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
-    holdTimerRef.current = setTimeout(() => {
-      holdTimerRef.current = null;
-      setOpen(true);
-    }, 2000);
-  }, []);
-
-  const onHotspotPressOut = useCallback(() => {
-    if (holdTimerRef.current) {
-      clearTimeout(holdTimerRef.current);
-      holdTimerRef.current = null;
-    }
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
-    };
-  }, []);
+  // Use gesture-handler's LongPress so it competes in the same gesture system
+  // as PlaySurface (which uses Gesture.Pan + Gesture.Tap). React Native's
+  // Pressable can be starved of touches when a sibling Pan gesture is waiting
+  // for movement.
+  const longPress = Gesture.LongPress()
+    .minDuration(2000)
+    .maxDistance(40)
+    .shouldCancelWhenOutside(false)
+    .onStart(() => {
+      runOnJS(openPanel)();
+    });
 
   const onChangeMode = useCallback(
     (m: AudioMode) => {
@@ -90,13 +80,9 @@ export const AdultPanel: React.FC = () => {
 
   return (
     <>
-      <Pressable
-        style={styles.hotspot}
-        onPressIn={onHotspotPressIn}
-        onPressOut={onHotspotPressOut}
-        hitSlop={20}
-        accessibilityLabel="Open adult settings"
-      />
+      <GestureDetector gesture={longPress}>
+        <View style={styles.hotspot} />
+      </GestureDetector>
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <View style={styles.backdrop}>
           <View style={styles.panel} onTouchStart={resetDismissTimer}>
@@ -148,11 +134,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     top: 0,
-    // Big enough that an adult can find it by feel, but not so big it
-    // starts swallowing Ava's first taps. ~17% of typical phone width is fine.
     width: 120,
     height: 120,
-    backgroundColor: 'transparent',
+    // Temporary debug tint — confirms hotspot position is reachable. Remove
+    // once the long-press is firing reliably on device.
+    backgroundColor: 'rgba(255, 80, 80, 0.18)',
   },
   backdrop: {
     flex: 1,
