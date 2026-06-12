@@ -112,9 +112,8 @@ Veo's "seamless loop" requests are unreliable. The fix is a 30-second ffmpeg ste
 
 ```bash
 ffmpeg -i input.mp4 \
-  -filter_complex "[0:v]reverse[r];[0:v][r]concat=n=2:v=1:a=0[v]" \
+  -filter_complex "[0:v]reverse[r];[0:v][r]concat=n=2:v=1:a=0[c];[c]scale=720:-2[v]" \
   -map "[v]" \
-  -vf "scale=720:-2" \
   -c:v libx264 -crf 26 -preset slow -pix_fmt yuv420p -movflags +faststart -an \
   background.mp4
 ```
@@ -125,9 +124,8 @@ Plays the 8s clip forward then in reverse → 16s total → loops perfectly beca
 
 ```bash
 ffmpeg -i input.mp4 \
-  -filter_complex "[0:v]split=2[a][b];[a]trim=0:7,setpts=PTS-STARTPTS[head];[b]trim=7:8,setpts=PTS-STARTPTS[tail];[tail][head]xfade=transition=fade:duration=1:offset=0[v]" \
+  -filter_complex "[0:v]split=2[a][b];[a]trim=0:7,setpts=PTS-STARTPTS[head];[b]trim=7:8,setpts=PTS-STARTPTS[tail];[tail][head]xfade=transition=fade:duration=1:offset=0[c];[c]scale=720:-2[v]" \
   -map "[v]" \
-  -vf "scale=720:-2" \
   -c:v libx264 -crf 26 -preset slow -pix_fmt yuv420p -movflags +faststart -an \
   background.mp4
 ```

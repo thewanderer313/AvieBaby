@@ -74,9 +74,8 @@ fi
 echo "Boomeranging '$INPUT' -> '$OUTPUT' ..."
 
 ffmpeg -y -i "$INPUT" \
-  -filter_complex "[0:v]reverse[r];[0:v][r]concat=n=2:v=1:a=0[v]" \
+  -filter_complex "[0:v]reverse[r];[0:v][r]concat=n=2:v=1:a=0[c];[c]scale=720:-2[v]" \
   -map "[v]" \
-  -vf "scale=720:-2" \
   -c:v libx264 -crf 26 -preset slow -pix_fmt yuv420p -movflags +faststart -an \
   "$OUTPUT"
 
