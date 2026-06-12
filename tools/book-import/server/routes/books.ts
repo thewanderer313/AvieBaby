@@ -165,5 +165,38 @@ export function makeBooksRouter(repoRoot: string): Router {
     })();
   });
 
+  router.patch('/:id', async (req, res) => {
+    const { id } = req.params;
+    const { title, readers } = req.body as {
+      title?: string;
+      readers?: Record<string, string>;
+    };
+
+    const books = listBooks(repoRoot);
+    const book = books.find((b) => b.id === id);
+    if (!book) return res.status(404).json({ error: `Book "${id}" not found.` });
+
+    const info = loadBookInfo(repoRoot, id);
+    if (typeof title === 'string' && title.length > 0) info.title = title;
+    if (readers && typeof readers === 'object') {
+      for (const [rid, name] of Object.entries(readers)) {
+        if (typeof name === 'string' && name.length > 0) info.readers[rid] = name;
+      }
+    }
+    writeBookInfo(repoRoot, id, info);
+
+    const job = createJob();
+    res.json({ jobId: job.id });
+
+    (async () => {
+      try {
+        await runBookRegister(repoRoot, job.emit);
+        job.finish(true);
+      } catch (err) {
+        job.finish(false, err instanceof Error ? err.message : String(err));
+      }
+    })();
+  });
+
   return router;
 }
