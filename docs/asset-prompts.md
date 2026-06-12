@@ -158,3 +158,52 @@ Character ids per theme (must match `src/themes/ThemeRegistry.ts`):
 - **disco-jungle**: banana, monkey, parrot
 
 Base prompt template: `"Friendly cartoon <character>, soft rounded shapes, large eyes, gentle smile, simple shading, centered, transparent background, no shadow, no text, toddler-safe, ~512x512px"`. Iterate on a single character with Nano Banana's "consistent character" mode so re-renders feel like the same little guy.
+
+---
+
+## App icon
+
+The icon needs to be **square, 1024×1024, full-bleed** (no transparency around the edges — the OS clips the corners itself). Generate it in Nano Banana / Gemini 2.5 Flash Image, then run `scripts/icon.sh <input.png>` and it'll produce all the iOS/Android variants automatically.
+
+### Four prompt directions
+
+Pick whichever fits the vibe you want. All four are 1024×1024 square, vibrant, child-friendly, no text.
+
+**A. Letter A with sparkles (most "for Ava")**
+
+```
+App icon for a toddler play app, 1024x1024 square, full-bleed. A large stylized letter A in white at the center, soft rounded sans-serif, surrounded by colorful sparkles and tiny stars. Vibrant gradient background flowing from cyan to lilac to coral pink. Soft rounded shapes, no shadows, no other text, modern flat app icon style, joyful and toddler-safe.
+```
+
+**B. Sparkle creature (most playful)**
+
+```
+App icon for a toddler play app, 1024x1024 square, full-bleed. A cute round cartoon sparkle creature with big friendly eyes and rosy cheeks, holding a tiny magic wand. Vibrant rainbow gradient background. Surrounded by small sparkles and stars. Bright joyful colors, soft rounded shapes, no shadows, no text, modern flat app icon style.
+```
+
+**C. Three worlds (most "represents the themes")**
+
+```
+App icon for a toddler play app, 1024x1024 square, full-bleed. Three colorful glowing orbs representing different worlds arranged in a triangle: a blue ocean orb with a tiny whale, a purple cosmic orb with a star, and a green tropical orb with a leaf. Soft pastel gradient background. Each orb glows softly. Bright joyful colors, no text, no shadows, modern flat app icon style.
+```
+
+**D. Magic button (matches the in-app button)**
+
+```
+App icon for a toddler play app, 1024x1024 square, full-bleed. A large glowing magic button in the center, bright coral pink with a soft white border, displaying a 5-pointed star symbol. Surrounded by colorful sparkles drifting outward. Background: soft rainbow gradient (yellow to pink to purple). Bright joyful colors, no text, no shadows, modern flat app icon style.
+```
+
+### Workflow
+
+1. Generate in Nano Banana. Aim for 1024×1024 square output (any of the prompts above explicitly request that).
+2. Generate 2–3 takes and pick the one that reads well at small size — squint at it; if you can still tell what it is, it'll work as a home-screen icon.
+3. Save as `~/Desktop/aviebaby-icon.png` (or anywhere).
+4. From the project: `scripts/icon.sh ~/Desktop/aviebaby-icon.png`
+5. Optional: pass a custom Android background color: `scripts/icon.sh ~/Desktop/aviebaby-icon.png "#FF69B4"`
+6. Update `app.json` color fields if you changed the background — `expo.android.adaptiveIcon.backgroundColor` and `expo.splash.backgroundColor` should match for a polished look.
+
+### Icon design tips
+
+- **Important content stays in the middle 65%.** The OS crops the corners (iOS rounds them, Android may mask with a circle on some launchers).
+- **Avoid fine detail.** It'll be 60×60 pixels on her home screen — anything thinner than ~30 pixels of source will disappear.
+- **Pick a color that contrasts the typical home-screen wallpaper.** A bright icon stands out; a dark one disappears against a dark wallpaper.
