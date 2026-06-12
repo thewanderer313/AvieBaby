@@ -5,6 +5,22 @@ import { Book } from './types';
 // asset filenames themselves. Re-run the script after adding books or readers.
 
 export const BOOKS: Book[] = [
+  {
+    id: 'test',
+    title: 'Test Book',
+    pages: [
+      require('../../assets/books/test/pages/page-01.png'),
+    ],
+    readers: [
+      {
+        id: 'ryan',
+        name: 'Uncle Ryan',
+        pages: [
+          require('../../assets/books/test/voices/ryan/page-01.mp3'),
+        ],
+      },
+    ],
+  },
 ];
 
 export function validateBooks(books: Book[]): string[] {
