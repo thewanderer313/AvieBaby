@@ -12,3 +12,5 @@ web-build/
 .env*.local
 ios/
 android/
+# Raw pre-boomerang Veo video backups (kept locally so you can re-process)
+assets/themes/*/background.raw.mp4
