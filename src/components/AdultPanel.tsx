@@ -37,7 +37,31 @@ export const AdultPanel: React.FC = () => {
     if (!open) setConfirmExit(false);
   }, [open]);
 
-  const openPanel = useCallback(() => setOpen(true), []);
+  // Manual long-press: setTimeout on touch-down, cancel on touch-up.
+  // Pressable's onLongPress cancels on tiny finger movement during the hold,
+  // which makes a 2s hold unreliable in real-world use.
+  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const onHotspotPressIn = useCallback(() => {
+    if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+    holdTimerRef.current = setTimeout(() => {
+      holdTimerRef.current = null;
+      setOpen(true);
+    }, 2000);
+  }, []);
+
+  const onHotspotPressOut = useCallback(() => {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+    };
+  }, []);
 
   const onChangeMode = useCallback(
     (m: AudioMode) => {
@@ -68,8 +92,9 @@ export const AdultPanel: React.FC = () => {
     <>
       <Pressable
         style={styles.hotspot}
-        onLongPress={openPanel}
-        delayLongPress={2000}
+        onPressIn={onHotspotPressIn}
+        onPressOut={onHotspotPressOut}
+        hitSlop={20}
         accessibilityLabel="Open adult settings"
       />
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
@@ -122,12 +147,11 @@ const styles = StyleSheet.create({
   hotspot: {
     position: 'absolute',
     left: 0,
-    // Offset down from the very edge so the system notification-pull-down
-    // gesture on Android (and the notch / Dynamic Island region on iOS)
-    // don't intercept the touch before the long-press fires.
-    top: 50,
-    width: 80,
-    height: 80,
+    top: 0,
+    // Big enough that an adult can find it by feel, but not so big it
+    // starts swallowing Ava's first taps. ~17% of typical phone width is fine.
+    width: 120,
+    height: 120,
     backgroundColor: 'transparent',
   },
   backdrop: {
