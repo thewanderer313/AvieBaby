@@ -8,13 +8,16 @@ import { PlayScreen } from './src/components/PlayScreen';
 import { AdultPanel } from './src/components/AdultPanel';
 import { Greeting } from './src/components/Greeting';
 import { THEMES } from './src/themes/ThemeRegistry';
+import { AppModeProvider, useAppMode } from './src/mode/AppModeProvider';
+import { BookScreen } from './src/components/BookScreen';
 
 function Root() {
   const { theme } = useTheme();
+  const { mode } = useAppMode();
   return (
     <AudioProvider initialTheme={theme}>
       <View style={styles.root}>
-        <PlayScreen />
+        {mode === 'play' ? <PlayScreen /> : <BookScreen />}
         <AdultPanel />
         <Greeting />
       </View>
@@ -32,9 +35,11 @@ export default function App() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <StatusBar hidden />
-      <ThemeProvider>
-        <Root />
-      </ThemeProvider>
+      <AppModeProvider>
+        <ThemeProvider>
+          <Root />
+        </ThemeProvider>
+      </AppModeProvider>
     </GestureHandlerRootView>
   );
 }
