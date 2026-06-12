@@ -34,8 +34,14 @@ app.get('/api/jobs/:id/events', (req, res) => {
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
 
+  let finishedDuringReplay = false;
   for (const event of job.events) {
     res.write(`data: ${JSON.stringify(event)}\n\n`);
+    if (event.step === 'done') finishedDuringReplay = true;
+  }
+  if (finishedDuringReplay) {
+    res.end();
+    return;
   }
 
   const onEvent = (event: PipelineEvent) => {
