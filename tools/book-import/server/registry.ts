@@ -53,7 +53,7 @@ function readOne(assetsDir: string, bookId: string): BookSummary {
   };
 }
 
-interface BookInfo {
+export interface BookInfo {
   title: string;
   readers: Record<string, string>;
 }
