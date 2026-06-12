@@ -73,9 +73,12 @@ OUTPUT="assets/themes/$THEME/voices/$CHAR.mp3"
 
 echo "Processing '$INPUT' -> '$OUTPUT' ..."
 
-# silenceremove trims start and end; loudnorm targets -16 LUFS (broadcast voice standard)
+# silenceremove trims start and end; loudnorm targets -16 LUFS (broadcast voice standard).
+# Start trim is aggressive (-40 dB, 50 ms) so the word starts crisp.
+# Tail trim is intentionally forgiving (-55 dB, 500 ms) so soft trailing
+# consonants like "-sh" in "starfish" or "jellyfish" don't get clipped.
 ffmpeg -y -i "$INPUT" \
-  -af "silenceremove=start_periods=1:start_silence=0.05:start_threshold=-40dB:stop_periods=1:stop_silence=0.1:stop_threshold=-40dB,loudnorm=I=-16:TP=-1.5:LRA=11" \
+  -af "silenceremove=start_periods=1:start_silence=0.05:start_threshold=-40dB:stop_periods=1:stop_silence=0.5:stop_threshold=-55dB,loudnorm=I=-16:TP=-1.5:LRA=11" \
   -ac 1 -ar 44100 -b:a 96k \
   "$OUTPUT"
 
