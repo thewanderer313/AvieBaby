@@ -19,6 +19,10 @@ export function validateBooks(books: Book[]): string[] {
       errors.push(`Book "${book.id}" has no readers; at least one is required.`);
     }
 
+    if (book.pages.length === 0) {
+      errors.push(`Book "${book.id}" has no pages; at least one is required.`);
+    }
+
     const seenReaderIds = new Set<string>();
     for (const reader of book.readers) {
       if (seenReaderIds.has(reader.id)) {

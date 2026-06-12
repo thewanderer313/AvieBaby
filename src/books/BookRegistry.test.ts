@@ -63,4 +63,16 @@ describe('validateBooks', () => {
       'Duplicate reader id "ryan" within book "sample-book".',
     );
   });
+
+  test('rejects a book with zero pages', () => {
+    const bad: Book = {
+      id: 'empty-book',
+      title: 'Empty',
+      pages: [],
+      readers: [{ id: 'ryan', name: 'Uncle Ryan', pages: [] }],
+    };
+    expect(validateBooks([bad])).toContain(
+      'Book "empty-book" has no pages; at least one is required.',
+    );
+  });
 });
