@@ -107,7 +107,7 @@ if [ -n "$READER_NAME" ]; then
     const p = process.env.INFO_PATH;
     const rid = process.env.READER_ID;
     const rname = process.env.READER_NAME;
-    let info = { title: process.env.BOOK_ID, readers: {} };
+    let info = { readers: {} };
     if (fs.existsSync(p)) {
       info = JSON.parse(fs.readFileSync(p, "utf8"));
       if (!info.readers) info.readers = {};
