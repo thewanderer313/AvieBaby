@@ -7,11 +7,6 @@ import {
   View,
   BackHandler,
 } from 'react-native';
-import {
-  GestureDetector,
-  Gesture,
-} from 'react-native-gesture-handler';
-import { runOnJS } from 'react-native-reanimated';
 import { useTheme } from '../themes/ThemeProvider';
 import { useAudio } from '../audio/AudioProvider';
 import { AudioMode } from '../themes/types';
@@ -42,11 +37,7 @@ export const AdultPanel: React.FC = () => {
     if (!open) setConfirmExit(false);
   }, [open]);
 
-  const longPress = Gesture.LongPress()
-    .minDuration(2000)
-    .onStart(() => {
-      runOnJS(setOpen)(true);
-    });
+  const openPanel = useCallback(() => setOpen(true), []);
 
   const onChangeMode = useCallback(
     (m: AudioMode) => {
@@ -75,9 +66,12 @@ export const AdultPanel: React.FC = () => {
 
   return (
     <>
-      <GestureDetector gesture={longPress}>
-        <View style={styles.hotspot} />
-      </GestureDetector>
+      <Pressable
+        style={styles.hotspot}
+        onLongPress={openPanel}
+        delayLongPress={2000}
+        accessibilityLabel="Open adult settings"
+      />
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <View style={styles.backdrop}>
           <View style={styles.panel} onTouchStart={resetDismissTimer}>
@@ -128,9 +122,12 @@ const styles = StyleSheet.create({
   hotspot: {
     position: 'absolute',
     left: 0,
-    top: 0,
-    width: 60,
-    height: 60,
+    // Offset down from the very edge so the system notification-pull-down
+    // gesture on Android (and the notch / Dynamic Island region on iOS)
+    // don't intercept the touch before the long-press fires.
+    top: 50,
+    width: 80,
+    height: 80,
     backgroundColor: 'transparent',
   },
   backdrop: {
