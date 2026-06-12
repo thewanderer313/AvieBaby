@@ -3,6 +3,7 @@ import { createAudioPlayer, useAudioPlayer } from 'expo-audio';
 import { AudioController } from './AudioController';
 import { AudioMode, Character, Theme } from '../themes/types';
 import { loadAudioMode, saveAudioMode } from '../storage/settings';
+import { useAppMode } from '../mode/AppModeProvider';
 
 const SFX_SPARKLE = require('../../assets/sfx/sparkle.mp3');
 const SFX_SPAWN = require('../../assets/sfx/spawn.mp3');
@@ -16,6 +17,7 @@ interface AudioContextValue {
   playSpawnSFX: () => void;
   playVoice: (character: Character) => void;
   playGreeting: () => void;
+  playBookPage: (source: number) => void;
 }
 
 const AudioContext = createContext<AudioContextValue | null>(null);
@@ -26,6 +28,7 @@ export const AudioProvider: React.FC<{ initialTheme: Theme; children: React.Reac
 }) => {
   const controllerRef = useRef(new AudioController('silent'));
   const duckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bookAudioRef = useRef<{ remove: () => void } | null>(null);
   const [mode, setModeState] = useState<AudioMode>('silent');
   const [currentMusicSource, setCurrentMusicSource] = useState<number>(() => {
     const idx = controllerRef.current.pickTrackIndex(initialTheme.id);
@@ -45,17 +48,20 @@ export const AudioProvider: React.FC<{ initialTheme: Theme; children: React.Reac
       });
   }, []);
 
-  // Start/stop music whenever mode or source changes.
+  // Pull AppMode so we can mute music entirely in book mode.
+  const { mode: appMode } = useAppMode();
+
+  // Start/stop music whenever audio mode, source, or app mode changes.
   useEffect(() => {
     if (!musicPlayer) return;
     musicPlayer.loop = true;
-    if (controllerRef.current.shouldPlayMusic()) {
+    if (appMode === 'play' && controllerRef.current.shouldPlayMusic()) {
       musicPlayer.volume = 1.0;
       musicPlayer.play();
     } else {
       musicPlayer.pause();
     }
-  }, [mode, musicPlayer, currentMusicSource]);
+  }, [mode, musicPlayer, currentMusicSource, appMode]);
 
   const setMode = useCallback(async (m: AudioMode) => {
     controllerRef.current.setMode(m);
@@ -119,18 +125,43 @@ export const AudioProvider: React.FC<{ initialTheme: Theme; children: React.Reac
     [playDuckedAudio],
   );
 
+  const playBookPage = useCallback((source: number) => {
+    // Cancel any in-flight book audio before starting the next one.
+    if (bookAudioRef.current) {
+      try { bookAudioRef.current.remove(); } catch {}
+      bookAudioRef.current = null;
+    }
+    if (!controllerRef.current.shouldPlayVoice()) return;
+    try {
+      const p = createAudioPlayer(source);
+      p.volume = 1.0;
+      p.play();
+      bookAudioRef.current = p;
+      // Best-effort release after a generous window. Book pages can be long
+      // (~10s) so we hold the ref for 60s.
+      setTimeout(() => {
+        if (bookAudioRef.current === p) bookAudioRef.current = null;
+        try { p.remove(); } catch {}
+      }, 60000);
+    } catch {}
+  }, []);
+
   useEffect(() => {
     return () => {
       if (duckTimerRef.current) {
         clearTimeout(duckTimerRef.current);
         duckTimerRef.current = null;
       }
+      if (bookAudioRef.current) {
+        try { bookAudioRef.current.remove(); } catch {}
+        bookAudioRef.current = null;
+      }
     };
   }, []);
 
   const value = useMemo<AudioContextValue>(
-    () => ({ mode, setMode, onThemeChange, playSparkleSFX, playSpawnSFX, playVoice, playGreeting }),
-    [mode, setMode, onThemeChange, playSparkleSFX, playSpawnSFX, playVoice, playGreeting],
+    () => ({ mode, setMode, onThemeChange, playSparkleSFX, playSpawnSFX, playVoice, playGreeting, playBookPage }),
+    [mode, setMode, onThemeChange, playSparkleSFX, playSpawnSFX, playVoice, playGreeting, playBookPage],
   );
 
   return <AudioContext.Provider value={value}>{children}</AudioContext.Provider>;
