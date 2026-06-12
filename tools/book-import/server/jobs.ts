@@ -14,13 +14,19 @@ export function createJob(): { id: string; emit: (e: PipelineEvent) => void; fin
   const id = `job-${_next++}`;
   const emitter = new EventEmitter();
   const events: PipelineEvent[] = [];
-  jobs.set(id, { emitter, events, finished: false });
+  const job: Job = { emitter, events, finished: false };
+  jobs.set(id, job);
 
   const emit = (e: PipelineEvent) => {
+    // Reject events after finish — `done` must be terminal per SSE contract.
+    if (job.finished) return;
     events.push(e);
     emitter.emit('event', e);
   };
   const finish = (ok: boolean, error?: string) => {
+    // Idempotent: ignore subsequent calls.
+    if (job.finished) return;
+    job.finished = true;
     const finalEvent: PipelineEvent = {
       step: 'done',
       status: ok ? 'succeeded' : 'failed',
@@ -28,9 +34,8 @@ export function createJob(): { id: string; emit: (e: PipelineEvent) => void; fin
     };
     events.push(finalEvent);
     emitter.emit('event', finalEvent);
-    const job = jobs.get(id);
-    if (job) job.finished = true;
-    setTimeout(() => jobs.delete(id), 5 * 60 * 1000); // GC after 5 min
+    // GC after 5 min. unref() so the timer doesn't keep the event loop alive on shutdown.
+    setTimeout(() => jobs.delete(id), 5 * 60 * 1000).unref();
   };
   return { id, emit, finish };
 }
