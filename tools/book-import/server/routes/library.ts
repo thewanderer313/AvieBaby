@@ -40,16 +40,19 @@ export function makeLibraryRouter(repoRoot: string): express.Router {
               const f = files[i];
               const tmpIn = path.join(os.tmpdir(), `img-in-${Date.now()}-${i}-${f.originalname}`);
               fs.writeFileSync(tmpIn, f.buffer);
-              await runBookPage(repoRoot, tmpIn, '__staging__', i + 1, null, job.emit);
-              const stagedPath = path.join(
-                repoRoot, 'assets', 'books', '__staging__', 'pages',
-                `page-${String(i + 1).padStart(2, '0')}.png`,
+              const lib = loadLibrary(repoRoot);
+              const id = `img-${String(
+                Math.max(0, ...lib.assets.filter((a) => a.id.startsWith('img-')).map((a) => Number(a.id.slice(4)))) + 1,
+              ).padStart(4, '0')}`;
+              const outPath = path.join(repoRoot, 'assets', 'library', 'images', `${id}.png`);
+              await runBookPage(repoRoot, tmpIn, outPath, job.emit);
+              lib.assets.push({ id, type: 'image', source, filename: `${id}.png` });
+              fs.writeFileSync(
+                path.join(repoRoot, 'assets', 'library', 'library.json'),
+                JSON.stringify(lib, null, 2) + '\n',
               );
-              await addImageAsset(repoRoot, source, stagedPath);
-              fs.rmSync(stagedPath, { force: true });
               fs.rmSync(tmpIn, { force: true });
             }
-            fs.rmSync(path.join(repoRoot, 'assets', 'books'), { recursive: true, force: true });
             await runBookRegister(repoRoot, job.emit);
             job.finish(true);
           } catch (err) {

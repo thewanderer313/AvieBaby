@@ -45,15 +45,10 @@ function runScript(
 export async function runBookPage(
   repoRoot: string,
   inputPath: string,
-  bookId: string,
-  pageNum: number,
-  title: string | null,
+  outputPath: string,
   emit: PipelineEmit,
 ): Promise<void> {
-  const args = ['scripts/book-page.sh'];
-  if (title) args.push('--title', title);
-  args.push(inputPath, bookId, String(pageNum));
-  await runScript(repoRoot, args, `page-${pageNum}`, emit);
+  await runScript(repoRoot, ['scripts/book-page.sh', inputPath, outputPath], 'page', emit);
 }
 
 export async function runBookVoice(
