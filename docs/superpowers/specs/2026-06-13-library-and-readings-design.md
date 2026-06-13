@@ -20,7 +20,6 @@ The fix is to make each reader's reading of a book a fully independent unit. The
 
 ## Non-goals (v1)
 
-- No drag-and-drop reordering in the reading editor (up/down arrows only).
 - No cross-title asset reuse in the picker UI (assets are filtered by their source string; reusing an image across two titles requires re-uploading or relaxing the filter in v1.1).
 - No bulk delete in the library.
 - No editing of an asset's source/reader after upload (re-upload instead).
@@ -201,12 +200,14 @@ A single-column editor. Header: title-group picker (dropdown of existing titles,
 
 Body: a list of page rows. Each row contains:
 
+- A drag handle at the left edge (grab to reorder the row within the page sequence)
 - An image picker (dropdown of library images filtered to `source` = the title-group's `displayName` by default; user can change the filter)
 - An audio picker (dropdown filtered to `source` = title-group displayName AND `reader` = reading.reader by default)
-- Up / down arrows
 - Delete-row button
 
 Below the rows: **Add page** button — appends a blank row.
+
+Reordering uses `@dnd-kit/sortable` (modern, lightweight, accessible — keyboard reorder via arrow keys when a handle is focused). The reading editor is the only place drag-and-drop appears.
 
 Save validates that every row has both an image and an audio asset, and that asset ids resolve.
 
@@ -244,6 +245,10 @@ If the user routinely uploads under a slightly different source string than the 
 - Existing book-mode tests updated to consume the new BookRegistry shape.
 - New unit test: selecting a title-group lists its readings; selecting a reading yields the expected pages array.
 
+**Reading editor drag-and-drop:**
+- Unit test: reorder by simulating `@dnd-kit` `onDragEnd` with start/end indices; assert the page rows array updates correctly and save sends the new order.
+- Unit test: keyboard reorder via arrow keys on a focused handle.
+
 ## Migration
 
 None. Greenfield. As part of the implementation:
@@ -259,13 +264,12 @@ None. Greenfield. As part of the implementation:
 - Greenfield deletion of the old layout
 - Library asset CRUD with source + reader metadata, batch upload, ffmpeg pipelines
 - Title-group CRUD with optional cover
-- Reading CRUD with single-column row editor and up/down reordering
+- Reading CRUD with single-column row editor and drag-and-drop page reordering (`@dnd-kit/sortable`)
 - Preview overlay against a reading
 - Runtime `BookRegistry` regen from the new layout
 - Reference-integrity enforcement on delete and on reading save
 
 **Deferred:**
-- Drag-and-drop reordering
 - Cross-title asset reuse (currently possible by clearing the source filter, but no first-class UI)
 - Bulk delete
 - Editing an asset's source/reader after upload
