@@ -3,11 +3,13 @@ import {
   Reading, TitleGroup, listReadings, listTitles, deleteReading,
 } from '../api';
 import { ReadingEditor } from './ReadingEditor';
+import { PreviewOverlay } from './PreviewOverlay';
 
 export const Readings: React.FC = () => {
   const [readings, setReadings] = useState<Reading[]>([]);
   const [titles, setTitles] = useState<TitleGroup[]>([]);
   const [editing, setEditing] = useState<Reading | 'new' | null>(null);
+  const [previewing, setPreviewing] = useState<Reading | null>(null);
 
   const refresh = () => {
     listReadings().then(setReadings).catch(console.error);
@@ -46,6 +48,7 @@ export const Readings: React.FC = () => {
                 <div style={{ fontFamily: 'monospace', fontSize: 12, color: '#666' }}>{r.id} · {r.pages.length} pages</div>
                 <div style={{ display: 'flex', gap: 4 }}>
                   <button onClick={() => setEditing(r)} style={btnSecondary}>Edit</button>
+                  <button onClick={() => setPreviewing(r)} style={btnSecondary}>Preview</button>
                   <button onClick={() => onDelete(r)} style={btnDanger}>Delete</button>
                 </div>
               </div>
@@ -58,6 +61,12 @@ export const Readings: React.FC = () => {
         <ReadingEditor
           reading={editing === 'new' ? null : editing}
           onClose={() => { setEditing(null); refresh(); }}
+        />
+      )}
+      {previewing && (
+        <PreviewOverlay
+          reading={previewing}
+          onClose={() => setPreviewing(null)}
         />
       )}
     </div>
