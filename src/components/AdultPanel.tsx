@@ -16,6 +16,7 @@ import { useAudio } from '../audio/AudioProvider';
 import { AudioMode } from '../themes/types';
 import { THEMES } from '../themes/ThemeRegistry';
 import { REGISTRY } from '../books/BookRegistry';
+import { useBooks } from '../books/BookProvider';
 import { useAppMode } from '../mode/AppModeProvider';
 
 const AUTO_DISMISS_MS = 5000;
@@ -43,6 +44,7 @@ export const AdultPanel: React.FC = () => {
   const { jumpTo, theme } = useTheme();
   const { mode, setMode } = useAudio();
   const { mode: appMode, enterBook, exitBook } = useAppMode();
+  const { readingsForTitle, selectReading } = useBooks();
   const [selectedBookForReaderPicker, setSelectedBookForReaderPicker] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
@@ -136,11 +138,14 @@ export const AdultPanel: React.FC = () => {
   );
 
   const onPickReader = useCallback(
-    (bookId: string, readingId: string) => {
-      enterBook(bookId, readingId);
+    (titleId: string, readingId: string) => {
+      const readings = readingsForTitle(titleId);
+      const reading = readings.find((r) => r.id === readingId) ?? null;
+      if (reading) selectReading(reading);
+      enterBook(titleId, readingId);
       setOpen(false);
     },
-    [enterBook],
+    [readingsForTitle, selectReading, enterBook],
   );
 
   const onExitBook = useCallback(() => {

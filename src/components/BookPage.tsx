@@ -1,26 +1,32 @@
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { useBooks } from '../books/BookProvider';
+import React, { useEffect } from 'react';
+import { Image, StyleSheet, View } from 'react-native';
+import { REGISTRY } from '../books/BookRegistry';
+import type { ReadingPage } from '../books/types';
+import { useAudio } from '../audio/AudioProvider';
 
-export const BookPage: React.FC = () => {
-  // TODO Task 16: resolve page.image / page.audio asset ids and render image + audio.
-  const { selectedReading, pageIndex } = useBooks();
+interface Props {
+  page: ReadingPage;
+  pageKey: string;
+}
 
-  if (!selectedReading) return <View style={styles.wrap} />;
-  // Page is intentionally unused until Task 16 wires up asset resolution.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _page = selectedReading.pages[pageIndex];
+export const BookPage: React.FC<Props> = ({ page }) => {
+  const imageSource = REGISTRY.assets[page.image];
+  const audioSource = REGISTRY.assets[page.audio];
+  const { playBookPage } = useAudio();
 
-  return <View style={styles.wrap} />;
+  useEffect(() => {
+    if (audioSource != null) playBookPage(audioSource);
+  }, [audioSource, playBookPage]);
+
+  return (
+    <View style={styles.fill}>
+      {imageSource != null && (
+        <Image source={imageSource} style={styles.fill} resizeMode="contain" />
+      )}
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
-  wrap: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    backgroundColor: '#000',
-  },
+  fill: { flex: 1, width: '100%', height: '100%', backgroundColor: '#000' },
 });
