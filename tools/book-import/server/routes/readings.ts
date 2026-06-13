@@ -4,18 +4,20 @@ import {
   ReadingNotFoundError, ReadingValidationError,
 } from '../readings.js';
 import { loadLibrary, findAsset } from '../library.js';
-import { withReadingLock } from '../locks.js';
+import { withReadingLock, withLibraryLock } from '../locks.js';
 import { runBookRegister } from '../pipeline.js';
 
 export function makeReadingsRouter(repoRoot: string): express.Router {
   const r = express.Router();
   const assetExists = (id: string) => findAsset(loadLibrary(repoRoot), id) !== null;
+  const safeId = (id: string) => /^rdg-\d+$/.test(id);
 
   r.get('/', (_req, res) => {
     res.json({ readings: loadReadings(repoRoot) });
   });
 
   r.get('/:id', (req, res) => {
+    if (!safeId(req.params.id)) return res.status(404).json({ error: 'not found' });
     const reading = loadReading(repoRoot, req.params.id);
     if (!reading) return res.status(404).json({ error: 'not found' });
     res.json({ reading });
@@ -24,21 +26,24 @@ export function makeReadingsRouter(repoRoot: string): express.Router {
   r.post('/', async (req, res, next) => {
     try {
       const { titleId, reader, pages } = req.body ?? {};
-      const reading = await createReading(
-        repoRoot,
-        { titleId, reader, pages: Array.isArray(pages) ? pages : [] },
-        assetExists,
+      const reading = await withLibraryLock(() =>
+        createReading(
+          repoRoot,
+          { titleId, reader, pages: Array.isArray(pages) ? pages : [] },
+          assetExists,
+        ),
       );
       try { await runBookRegister(repoRoot, () => {}); } catch {}
       res.status(201).json({ reading });
     } catch (err) {
-      if (err instanceof ReadingValidationError) return res.status(400).json({ error: (err as Error).message });
+      if (err instanceof ReadingValidationError) return res.status(400).json({ error: err.message });
       next(err);
     }
   });
 
   r.patch('/:id', async (req, res, next) => {
     try {
+      if (!safeId(req.params.id)) return res.status(404).json({ error: 'not found' });
       const { titleId, reader, pages } = req.body ?? {};
       const reading = await withReadingLock(req.params.id, () =>
         updateReading(
@@ -58,6 +63,7 @@ export function makeReadingsRouter(repoRoot: string): express.Router {
 
   r.delete('/:id', async (req, res, next) => {
     try {
+      if (!safeId(req.params.id)) return res.status(404).json({ error: 'not found' });
       await withReadingLock(req.params.id, () => deleteReading(repoRoot, req.params.id));
       try { await runBookRegister(repoRoot, () => {}); } catch {}
       res.json({ ok: true });

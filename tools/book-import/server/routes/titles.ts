@@ -4,7 +4,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {
-  loadTitles, loadTitle, createTitle, renameTitle, setTitleCover, deleteTitle,
+  loadTitles, loadTitle, createTitle, renameTitle, setTitleCover, deleteTitle, slugify,
   TitleNotFoundError, TitleIdConflictError, TitleInUseError,
 } from '../titles.js';
 import { readingsReferencingTitle } from '../readings.js';
@@ -15,12 +15,14 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 export function makeTitlesRouter(repoRoot: string): express.Router {
   const r = express.Router();
+  const safeId = (id: string) => /^[a-z0-9-]+$/.test(id);
 
   r.get('/', (_req, res) => {
     res.json({ titles: loadTitles(repoRoot) });
   });
 
   r.get('/:id', (req, res) => {
+    if (!safeId(req.params.id)) return res.status(404).json({ error: 'not found' });
     const t = loadTitle(repoRoot, req.params.id);
     if (!t) return res.status(404).json({ error: 'not found' });
     res.json({ title: t });
@@ -30,7 +32,8 @@ export function makeTitlesRouter(repoRoot: string): express.Router {
     try {
       const displayName = String(req.body.displayName ?? '').trim();
       if (!displayName) return res.status(400).json({ error: 'displayName required' });
-      const t = await createTitle(repoRoot, displayName);
+      const t = await withTitleLock(slugify(displayName), () => createTitle(repoRoot, displayName));
+      try { await runBookRegister(repoRoot, () => {}); } catch {}
       res.status(201).json({ title: t });
     } catch (err) {
       if (err instanceof TitleIdConflictError) return res.status(409).json({ error: err.message });
@@ -40,6 +43,7 @@ export function makeTitlesRouter(repoRoot: string): express.Router {
 
   r.patch('/:id', async (req, res, next) => {
     try {
+      if (!safeId(req.params.id)) return res.status(404).json({ error: 'not found' });
       const displayName = String(req.body.displayName ?? '').trim();
       if (!displayName) return res.status(400).json({ error: 'displayName required' });
       const t = await withTitleLock(req.params.id, () =>
@@ -54,6 +58,7 @@ export function makeTitlesRouter(repoRoot: string): express.Router {
 
   r.post('/:id/cover', upload.single('file'), async (req, res, next) => {
     try {
+      if (!safeId(req.params.id)) return res.status(404).json({ error: 'not found' });
       const file = req.file;
       if (!file) return res.status(400).json({ error: 'file required' });
       const tmpIn = path.join(os.tmpdir(), `cover-in-${Date.now()}-${file.originalname}`);
@@ -75,6 +80,7 @@ export function makeTitlesRouter(repoRoot: string): express.Router {
 
   r.delete('/:id', async (req, res, next) => {
     try {
+      if (!safeId(req.params.id)) return res.status(404).json({ error: 'not found' });
       await withTitleLock(req.params.id, () =>
         deleteTitle(repoRoot, req.params.id, (id) => readingsReferencingTitle(repoRoot, id)),
       );
