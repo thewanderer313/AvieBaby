@@ -31,7 +31,8 @@
     "ios": "expo start --ios",
     "test": "jest",
     "typecheck": "tsc --noEmit",
-    "book-tool": "cd tools/book-import && npm run dev"
+    "book-tool": "cd tools/book-import && npm run dev",
+    "publish-update": "node scripts/book-register.js && eas update --channel preview"
   },
   "private": true
 }
