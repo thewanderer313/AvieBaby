@@ -59,11 +59,9 @@ export function makeTitlesRouter(repoRoot: string): express.Router {
       const tmpIn = path.join(os.tmpdir(), `cover-in-${Date.now()}-${file.originalname}`);
       fs.writeFileSync(tmpIn, file.buffer);
       const t = await withTitleLock(req.params.id, async () => {
-        await runBookCover(repoRoot, tmpIn, req.params.id, () => {});
-        const updated = await setTitleCover(
-          repoRoot, req.params.id,
-          path.join(repoRoot, 'assets', 'titles', req.params.id, 'cover.png'),
-        );
+        const outPath = path.join(repoRoot, 'assets', 'titles', req.params.id, 'cover.png');
+        await runBookCover(repoRoot, tmpIn, outPath, () => {});
+        const updated = await setTitleCover(repoRoot, req.params.id, outPath);
         await runBookRegister(repoRoot, () => {});
         return updated;
       });

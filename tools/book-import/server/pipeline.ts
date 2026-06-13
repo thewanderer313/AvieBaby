@@ -67,15 +67,10 @@ export async function runBookVoice(
 export async function runBookCover(
   repoRoot: string,
   inputPath: string,
-  bookId: string,
+  outputPath: string,
   emit: PipelineEmit,
 ): Promise<void> {
-  await runScript(
-    repoRoot,
-    ['scripts/book-cover.sh', inputPath, bookId],
-    'cover',
-    emit,
-  );
+  await runScript(repoRoot, ['scripts/book-cover.sh', inputPath, outputPath], 'cover', emit);
 }
 
 export async function runBookRegister(
