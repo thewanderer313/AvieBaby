@@ -54,23 +54,14 @@ export async function runBookPage(
 export async function runBookVoice(
   repoRoot: string,
   inputPath: string,
-  bookId: string,
-  readerId: string,
-  pageNum: number,
-  readerName: string | null,
+  outputPath: string,
   keepTail: boolean,
   emit: PipelineEmit,
 ): Promise<void> {
   const args = ['scripts/book-voice.sh'];
   if (keepTail) args.push('--keep-tail');
-  if (readerName) args.push('--reader-name', readerName);
-  args.push(inputPath, bookId, readerId, String(pageNum));
-  await runScript(
-    repoRoot,
-    args,
-    `voice-${readerId}-${pageNum}`,
-    emit,
-  );
+  args.push(inputPath, outputPath);
+  await runScript(repoRoot, args, 'voice', emit);
 }
 
 export async function runBookCover(

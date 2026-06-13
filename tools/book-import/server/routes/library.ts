@@ -4,7 +4,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {
-  loadLibrary, addImageAsset, addAudioAsset, deleteAsset,
+  loadLibrary, deleteAsset,
   AssetNotFoundError, AssetInUseError,
 } from '../library.js';
 import { readingsReferencingAsset } from '../readings.js';
@@ -88,18 +88,19 @@ export function makeLibraryRouter(repoRoot: string): express.Router {
               const f = files[i];
               const tmpIn = path.join(os.tmpdir(), `aud-in-${Date.now()}-${i}-${f.originalname}`);
               fs.writeFileSync(tmpIn, f.buffer);
-              await runBookVoice(
-                repoRoot, tmpIn, '__staging__', '__r__', i + 1, null, keepTail, job.emit,
+              const lib = loadLibrary(repoRoot);
+              const id = `aud-${String(
+                Math.max(0, ...lib.assets.filter((a) => a.id.startsWith('aud-')).map((a) => Number(a.id.slice(4)))) + 1,
+              ).padStart(4, '0')}`;
+              const outPath = path.join(repoRoot, 'assets', 'library', 'audio', `${id}.mp3`);
+              await runBookVoice(repoRoot, tmpIn, outPath, keepTail, job.emit);
+              lib.assets.push({ id, type: 'audio', source, reader, filename: `${id}.mp3` });
+              fs.writeFileSync(
+                path.join(repoRoot, 'assets', 'library', 'library.json'),
+                JSON.stringify(lib, null, 2) + '\n',
               );
-              const stagedPath = path.join(
-                repoRoot, 'assets', 'books', '__staging__', 'voices',
-                '__r__', `page-${String(i + 1).padStart(2, '0')}.mp3`,
-              );
-              await addAudioAsset(repoRoot, source, reader, stagedPath);
-              fs.rmSync(stagedPath, { force: true });
               fs.rmSync(tmpIn, { force: true });
             }
-            fs.rmSync(path.join(repoRoot, 'assets', 'books'), { recursive: true, force: true });
             await runBookRegister(repoRoot, job.emit);
             job.finish(true);
           } catch (err) {
