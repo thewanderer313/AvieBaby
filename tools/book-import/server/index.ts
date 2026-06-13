@@ -3,6 +3,9 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getJob } from './jobs.js';
 import type { PipelineEvent } from './pipeline.js';
+import { makeLibraryRouter } from './routes/library.js';
+import { makeTitlesRouter } from './routes/titles.js';
+import { makeReadingsRouter } from './routes/readings.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,6 +15,10 @@ const HOST = '127.0.0.1';
 
 const app = express();
 app.use(express.json());
+
+app.use('/api/library', makeLibraryRouter(REPO_ROOT));
+app.use('/api/titles', makeTitlesRouter(REPO_ROOT));
+app.use('/api/readings', makeReadingsRouter(REPO_ROOT));
 
 app.use('/assets/library', express.static(path.join(REPO_ROOT, 'assets', 'library')));
 app.use('/assets/titles', express.static(path.join(REPO_ROOT, 'assets', 'titles')));
