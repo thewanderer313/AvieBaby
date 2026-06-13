@@ -15,7 +15,7 @@ import { useTheme } from '../themes/ThemeProvider';
 import { useAudio } from '../audio/AudioProvider';
 import { AudioMode } from '../themes/types';
 import { THEMES } from '../themes/ThemeRegistry';
-import { BOOKS } from '../books/BookRegistry';
+import { REGISTRY } from '../books/BookRegistry';
 import { useAppMode } from '../mode/AppModeProvider';
 
 const AUTO_DISMISS_MS = 5000;
@@ -373,20 +373,23 @@ const BookPickerView: React.FC<BookPickerViewProps> = ({ onPick, onBack }) => (
   <>
     <Text style={styles.title}>Pick a book</Text>
     <Text style={styles.tagline}>
-      {BOOKS.length === 0
-        ? 'No books yet. Add one with scripts/book-page.sh and scripts/book-voice.sh.'
+      {REGISTRY.titles.length === 0
+        ? 'No books yet. Add one with the book import tool.'
         : 'Tap a book, then pick a reader.'}
     </Text>
 
     <ScrollView style={styles.steps} contentContainerStyle={styles.stepsContent}>
-      {BOOKS.map((b) => (
-        <Pressable key={b.id} style={styles.bookRow} onPress={() => onPick(b.id)}>
-          <Text style={styles.bookRowTitle}>{b.title}</Text>
-          <Text style={styles.bookRowReaders}>
-            {b.readers.length} {b.readers.length === 1 ? 'reader' : 'readers'}
-          </Text>
-        </Pressable>
-      ))}
+      {REGISTRY.titles.map((t) => {
+        const readings = REGISTRY.readingsByTitleId[t.id] ?? [];
+        return (
+          <Pressable key={t.id} style={styles.bookRow} onPress={() => onPick(t.id)}>
+            <Text style={styles.bookRowTitle}>{t.displayName}</Text>
+            <Text style={styles.bookRowReaders}>
+              {readings.length} {readings.length === 1 ? 'reader' : 'readers'}
+            </Text>
+          </Pressable>
+        );
+      })}
     </ScrollView>
 
     <Pressable style={styles.back} onPress={onBack}>
@@ -402,9 +405,10 @@ interface ReaderPickerViewProps {
 }
 
 const ReaderPickerView: React.FC<ReaderPickerViewProps> = ({ bookId, onPick, onBack }) => {
-  const book = BOOKS.find((b) => b.id === bookId);
+  const title = REGISTRY.titles.find((t) => t.id === bookId);
+  const readings = REGISTRY.readingsByTitleId[bookId] ?? [];
 
-  if (!book) {
+  if (!title) {
     return (
       <>
         <Text style={styles.title}>Book missing</Text>
@@ -417,13 +421,13 @@ const ReaderPickerView: React.FC<ReaderPickerViewProps> = ({ bookId, onPick, onB
 
   return (
     <>
-      <Text style={styles.title}>{book.title}</Text>
+      <Text style={styles.title}>{title.displayName}</Text>
       <Text style={styles.tagline}>Pick a reader</Text>
 
       <ScrollView style={styles.steps} contentContainerStyle={styles.stepsContent}>
-        {book.readers.map((r) => (
+        {readings.map((r) => (
           <Pressable key={r.id} style={styles.bookRow} onPress={() => onPick(bookId, r.id)}>
-            <Text style={styles.bookRowTitle}>{r.name}</Text>
+            <Text style={styles.bookRowTitle}>{r.reader}</Text>
           </Pressable>
         ))}
       </ScrollView>

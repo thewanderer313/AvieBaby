@@ -2,15 +2,15 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
-import { useBook } from '../books/BookProvider';
+import { useBooks } from '../books/BookProvider';
 
 export const BookGestureSurface: React.FC = () => {
-  const { next, previous } = useBook();
+  const { goToNext, goToPrev } = useBooks();
 
   const tap = Gesture.Tap()
     .maxDuration(799)
     .onEnd(() => {
-      runOnJS(next)();
+      runOnJS(goToNext)();
     });
 
   const longPress = Gesture.LongPress()
@@ -18,7 +18,7 @@ export const BookGestureSurface: React.FC = () => {
     .maxDistance(40)
     .shouldCancelWhenOutside(false)
     .onStart(() => {
-      runOnJS(previous)();
+      runOnJS(goToPrev)();
     });
 
   const gesture = Gesture.Race(tap, longPress);

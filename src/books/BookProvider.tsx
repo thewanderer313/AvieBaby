@@ -1,64 +1,50 @@
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
-import { Book, Reader } from './types';
+import React, { createContext, useContext, useMemo, useState } from 'react';
+import { REGISTRY } from './BookRegistry';
+import type { TitleGroup, Reading } from './types';
 
-export function nextPage(current: number, pageCount: number): number {
-  if (pageCount <= 0) return 0;
-  return (current + 1) % pageCount;
+interface BookContext {
+  titles: TitleGroup[];
+  readingsForTitle: (titleId: string) => Reading[];
+  selectedReading: Reading | null;
+  selectReading: (r: Reading | null) => void;
+  pageIndex: number;
+  goToNext: () => void;
+  goToPrev: () => void;
 }
 
-export function previousPage(current: number): number {
-  return current > 0 ? current - 1 : 0;
-}
+const Ctx = createContext<BookContext | null>(null);
 
-interface BookContextValue {
-  book: Book;
-  reader: Reader;
-  currentPage: number;
-  next: () => void;
-  previous: () => void;
-}
+export const BookProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [selectedReading, setSelectedReading] = useState<Reading | null>(null);
+  const [pageIndex, setPageIndex] = useState(0);
 
-const BookContext = createContext<BookContextValue | null>(null);
-
-interface ProviderProps {
-  book: Book;
-  reader: Reader;
-  children: React.ReactNode;
-}
-
-export const BookProvider: React.FC<ProviderProps> = ({ book, reader, children }) => {
-  const [currentPage, setCurrentPage] = useState(0);
-
-  // Reset to page 0 when the book or reader changes (adult re-picks).
-  useEffect(() => {
-    setCurrentPage(0);
-  }, [book.id, reader.id]);
-
-  const next = useCallback(() => {
-    setCurrentPage((p) => nextPage(p, book.pages.length));
-  }, [book.pages.length]);
-
-  const previous = useCallback(() => {
-    setCurrentPage(previousPage);
-  }, []);
-
-  const value = useMemo<BookContextValue>(
-    () => ({ book, reader, currentPage, next, previous }),
-    [book, reader, currentPage, next, previous],
+  const value = useMemo<BookContext>(
+    () => ({
+      titles: REGISTRY.titles,
+      readingsForTitle: (titleId) => REGISTRY.readingsByTitleId[titleId] ?? [],
+      selectedReading,
+      selectReading: (r) => {
+        setSelectedReading(r);
+        setPageIndex(0);
+      },
+      pageIndex,
+      goToNext: () => {
+        if (!selectedReading) return;
+        setPageIndex((i) => (i + 1) % selectedReading.pages.length);
+      },
+      goToPrev: () => {
+        if (!selectedReading) return;
+        setPageIndex((i) => (i - 1 + selectedReading.pages.length) % selectedReading.pages.length);
+      },
+    }),
+    [selectedReading, pageIndex],
   );
 
-  return <BookContext.Provider value={value}>{children}</BookContext.Provider>;
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 };
 
-export function useBook(): BookContextValue {
-  const v = useContext(BookContext);
-  if (!v) throw new Error('useBook must be used inside <BookProvider>');
-  return v;
+export function useBooks(): BookContext {
+  const ctx = useContext(Ctx);
+  if (!ctx) throw new Error('useBooks must be used inside BookProvider');
+  return ctx;
 }

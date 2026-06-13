@@ -1,9 +1,6 @@
 import express from 'express';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { makeBooksRouter } from './routes/books.js';
-import { makeReadersRouter } from './routes/readers.js';
-import { makePagesRouter } from './routes/pages.js';
 import { getJob } from './jobs.js';
 import type { PipelineEvent } from './pipeline.js';
 
@@ -16,14 +13,8 @@ const HOST = '127.0.0.1';
 const app = express();
 app.use(express.json());
 
-app.use('/api/books', makeBooksRouter(REPO_ROOT));
-app.use('/api/books/:id/readers', makeReadersRouter(REPO_ROOT));
-app.use('/api/books/:id/pages', makePagesRouter(REPO_ROOT));
-
-app.use(
-  '/assets/books',
-  express.static(path.join(REPO_ROOT, 'assets', 'books')),
-);
+app.use('/assets/library', express.static(path.join(REPO_ROOT, 'assets', 'library')));
+app.use('/assets/titles', express.static(path.join(REPO_ROOT, 'assets', 'titles')));
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, repoRoot: REPO_ROOT });

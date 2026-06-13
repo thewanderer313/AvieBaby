@@ -1,22 +1,26 @@
 import React, { useEffect } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
-import { useBook } from '../books/BookProvider';
+import { useBooks } from '../books/BookProvider';
 import { useAudio } from '../audio/AudioProvider';
+import { REGISTRY } from '../books/BookRegistry';
 
 export const BookPage: React.FC = () => {
-  const { book, reader, currentPage } = useBook();
+  const { selectedReading, pageIndex } = useBooks();
   const { playBookPage } = useAudio();
 
-  // Whenever the page index changes (including initial mount), play that
-  // page's audio. The audio provider cancels any in-flight book clip first.
   useEffect(() => {
-    const audioSource = reader.pages[currentPage];
+    if (!selectedReading) return;
+    const page = selectedReading.pages[pageIndex];
+    if (!page) return;
+    const audioSource = REGISTRY.assets[page.audio];
     if (audioSource !== undefined) {
       playBookPage(audioSource);
     }
-  }, [currentPage, reader.pages, playBookPage]);
+  }, [pageIndex, selectedReading, playBookPage]);
 
-  const imageSource = book.pages[currentPage];
+  if (!selectedReading) return <View style={styles.wrap} />;
+  const page = selectedReading.pages[pageIndex];
+  const imageSource = page ? REGISTRY.assets[page.image] : undefined;
 
   return (
     <View style={styles.wrap}>
