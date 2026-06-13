@@ -8,8 +8,8 @@ export default defineConfig({
     port: 5175,
     host: '127.0.0.1',
     proxy: {
-      '/api': 'http://127.0.0.1:5174',
-      '/assets': 'http://127.0.0.1:5174',
+      '^/api/': 'http://127.0.0.1:5174',
+      '^/assets/': 'http://127.0.0.1:5174',
     },
   },
   build: {
