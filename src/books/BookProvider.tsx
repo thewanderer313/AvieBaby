@@ -2,7 +2,7 @@ import React, { createContext, useContext, useMemo, useState } from 'react';
 import { REGISTRY } from './BookRegistry';
 import type { TitleGroup, Reading } from './types';
 
-interface BookContext {
+export interface BookContext {
   titles: TitleGroup[];
   readingsForTitle: (titleId: string) => Reading[];
   selectedReading: Reading | null;

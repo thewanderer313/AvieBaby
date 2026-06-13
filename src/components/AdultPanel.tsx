@@ -136,8 +136,8 @@ export const AdultPanel: React.FC = () => {
   );
 
   const onPickReader = useCallback(
-    (bookId: string, readerId: string) => {
-      enterBook(bookId, readerId);
+    (bookId: string, readingId: string) => {
+      enterBook(bookId, readingId);
       setOpen(false);
     },
     [enterBook],
@@ -400,7 +400,7 @@ const BookPickerView: React.FC<BookPickerViewProps> = ({ onPick, onBack }) => (
 
 interface ReaderPickerViewProps {
   bookId: string;
-  onPick: (bookId: string, readerId: string) => void;
+  onPick: (bookId: string, readingId: string) => void;
   onBack: () => void;
 }
 

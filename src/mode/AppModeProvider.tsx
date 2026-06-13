@@ -13,8 +13,8 @@ export type AppMode = 'play' | 'book';
 interface AppModeContextValue {
   mode: AppMode;
   currentBookId: string | null;
-  currentReaderId: string | null;
-  enterBook: (bookId: string, readerId: string) => void;
+  currentReadingId: string | null;
+  enterBook: (bookId: string, readingId: string) => void;
   exitBook: () => void;
 }
 
@@ -23,7 +23,7 @@ const AppModeContext = createContext<AppModeContextValue | null>(null);
 export const AppModeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [mode, setMode] = useState<AppMode>('play');
   const [currentBookId, setCurrentBookId] = useState<string | null>(null);
-  const [currentReaderId, setCurrentReaderId] = useState<string | null>(null);
+  const [currentReadingId, setCurrentReadingId] = useState<string | null>(null);
 
   // Lock orientation whenever the mode changes. LANDSCAPE_LEFT = counterclockwise.
   useEffect(() => {
@@ -34,21 +34,21 @@ export const AppModeProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, [mode]);
 
-  const enterBook = useCallback((bookId: string, readerId: string) => {
+  const enterBook = useCallback((bookId: string, readingId: string) => {
     setCurrentBookId(bookId);
-    setCurrentReaderId(readerId);
+    setCurrentReadingId(readingId);
     setMode('book');
   }, []);
 
   const exitBook = useCallback(() => {
     setMode('play');
     setCurrentBookId(null);
-    setCurrentReaderId(null);
+    setCurrentReadingId(null);
   }, []);
 
   const value = useMemo<AppModeContextValue>(
-    () => ({ mode, currentBookId, currentReaderId, enterBook, exitBook }),
-    [mode, currentBookId, currentReaderId, enterBook, exitBook],
+    () => ({ mode, currentBookId, currentReadingId, enterBook, exitBook }),
+    [mode, currentBookId, currentReadingId, enterBook, exitBook],
   );
 
   return <AppModeContext.Provider value={value}>{children}</AppModeContext.Provider>;
