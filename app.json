@@ -32,6 +32,12 @@
       "expo-video",
       "expo-audio"
     ],
-    "assetBundlePatterns": ["assets/**/*"]
+    "assetBundlePatterns": ["assets/**/*"],
+    "updates": {
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": { "policy": "fingerprint" }
   }
 }

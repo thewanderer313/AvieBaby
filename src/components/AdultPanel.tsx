@@ -15,10 +15,13 @@ import { useTheme } from '../themes/ThemeProvider';
 import { useAudio } from '../audio/AudioProvider';
 import { AudioMode } from '../themes/types';
 import { THEMES } from '../themes/ThemeRegistry';
+import { REGISTRY } from '../books/BookRegistry';
+import { useBooks } from '../books/BookProvider';
+import { useAppMode } from '../mode/AppModeProvider';
 
 const AUTO_DISMISS_MS = 5000;
 
-type PanelView = 'settings' | 'lockdown';
+type PanelView = 'settings' | 'lockdown' | 'book-picker' | 'reader-picker';
 type LockdownPlatform = 'android' | 'ios';
 
 const ANDROID_STEPS: string[] = [
@@ -40,6 +43,9 @@ const IOS_STEPS: string[] = [
 export const AdultPanel: React.FC = () => {
   const { jumpTo, theme } = useTheme();
   const { mode, setMode } = useAudio();
+  const { mode: appMode, enterBook, exitBook } = useAppMode();
+  const { readingsForTitle, selectReading } = useBooks();
+  const [selectedBookForReaderPicker, setSelectedBookForReaderPicker] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
   const [view, setView] = useState<PanelView>('settings');
@@ -64,6 +70,7 @@ export const AdultPanel: React.FC = () => {
     if (!open) {
       setConfirmExit(false);
       setView('settings');
+      setSelectedBookForReaderPicker(null);
     }
   }, [open]);
 
@@ -116,6 +123,36 @@ export const AdultPanel: React.FC = () => {
     resetDismissTimer();
   }, [resetDismissTimer]);
 
+  const openBookPicker = useCallback(() => {
+    setView('book-picker');
+    resetDismissTimer();
+  }, [resetDismissTimer]);
+
+  const onPickBook = useCallback(
+    (bookId: string) => {
+      setSelectedBookForReaderPicker(bookId);
+      setView('reader-picker');
+      resetDismissTimer();
+    },
+    [resetDismissTimer],
+  );
+
+  const onPickReader = useCallback(
+    (titleId: string, readingId: string) => {
+      const readings = readingsForTitle(titleId);
+      const reading = readings.find((r) => r.id === readingId) ?? null;
+      if (reading) selectReading(reading);
+      enterBook(titleId, readingId);
+      setOpen(false);
+    },
+    [readingsForTitle, selectReading, enterBook],
+  );
+
+  const onExitBook = useCallback(() => {
+    exitBook();
+    setOpen(false);
+  }, [exitBook]);
+
   const onChangePlatform = useCallback(
     (p: LockdownPlatform) => {
       setShownPlatform(p);
@@ -127,7 +164,7 @@ export const AdultPanel: React.FC = () => {
   return (
     <>
       <GestureDetector gesture={longPress}>
-        <View style={styles.hotspot} />
+        <View style={[styles.hotspot, appMode === 'book' ? styles.hotspotLandscape : styles.hotspotPortrait]} />
       </GestureDetector>
       <Modal
         visible={open}
@@ -137,22 +174,42 @@ export const AdultPanel: React.FC = () => {
       >
         <View style={styles.backdrop}>
           <View style={styles.panel} onTouchStart={resetDismissTimer}>
-            {view === 'settings' ? (
+            {view === 'settings' && (
               <SettingsView
+                appMode={appMode}
                 mode={mode}
                 onChangeMode={onChangeMode}
                 themeId={theme.id}
                 onJump={onJump}
                 onOpenLockdown={openLockdown}
+                onOpenBookPicker={openBookPicker}
                 onExit={onExit}
+                onExitBook={onExitBook}
                 confirmExit={confirmExit}
                 onClose={() => setOpen(false)}
               />
-            ) : (
+            )}
+            {view === 'lockdown' && (
               <LockdownView
                 shownPlatform={shownPlatform}
                 onChangePlatform={onChangePlatform}
                 onBack={backToSettings}
+              />
+            )}
+            {view === 'book-picker' && (
+              <BookPickerView
+                onPick={onPickBook}
+                onBack={backToSettings}
+              />
+            )}
+            {view === 'reader-picker' && selectedBookForReaderPicker && (
+              <ReaderPickerView
+                bookId={selectedBookForReaderPicker}
+                onPick={onPickReader}
+                onBack={() => {
+                  setView('book-picker');
+                  resetDismissTimer();
+                }}
               />
             )}
           </View>
@@ -163,29 +220,41 @@ export const AdultPanel: React.FC = () => {
 };
 
 interface SettingsViewProps {
+  appMode: 'play' | 'book';
   mode: AudioMode;
   onChangeMode: (m: AudioMode) => void;
   themeId: string;
   onJump: (id: string) => void;
   onOpenLockdown: () => void;
+  onOpenBookPicker: () => void;
   onExit: () => void;
+  onExitBook: () => void;
   confirmExit: boolean;
   onClose: () => void;
 }
 
 const SettingsView: React.FC<SettingsViewProps> = ({
+  appMode,
   mode,
   onChangeMode,
   themeId,
   onJump,
   onOpenLockdown,
+  onOpenBookPicker,
   onExit,
+  onExitBook,
   confirmExit,
   onClose,
 }) => (
   <>
     <Text style={styles.title}>Ava's App</Text>
     <Text style={styles.tagline}>Made just for Ava</Text>
+
+    {appMode === 'book' && (
+      <Pressable style={styles.exitBook} onPress={onExitBook}>
+        <Text style={styles.exitBookText}>Exit book</Text>
+      </Pressable>
+    )}
 
     <Text style={styles.label}>Audio</Text>
     <View style={styles.row}>
@@ -212,6 +281,13 @@ const SettingsView: React.FC<SettingsViewProps> = ({
         </Pressable>
       ))}
     </View>
+
+    {appMode === 'play' && (
+      <Pressable style={styles.booksButton} onPress={onOpenBookPicker}>
+        <Text style={styles.booksButtonText}>Read a book to Ava</Text>
+        <Text style={styles.booksButtonSubtitle}>Pick a story and a family voice</Text>
+      </Pressable>
+    )}
 
     <Pressable style={styles.lockdownButton} onPress={onOpenLockdown}>
       <Text style={styles.lockdownButtonText}>Lock the phone for Ava</Text>
@@ -293,15 +369,90 @@ const LockdownView: React.FC<LockdownViewProps> = ({
   );
 };
 
+interface BookPickerViewProps {
+  onPick: (bookId: string) => void;
+  onBack: () => void;
+}
+
+const BookPickerView: React.FC<BookPickerViewProps> = ({ onPick, onBack }) => (
+  <>
+    <Text style={styles.title}>Pick a book</Text>
+    <Text style={styles.tagline}>
+      {REGISTRY.titles.length === 0
+        ? 'No books yet. Add one with the book import tool.'
+        : 'Tap a book, then pick a reader.'}
+    </Text>
+
+    <ScrollView style={styles.steps} contentContainerStyle={styles.stepsContent}>
+      {REGISTRY.titles.map((t) => {
+        const readings = REGISTRY.readingsByTitleId[t.id] ?? [];
+        return (
+          <Pressable key={t.id} style={styles.bookRow} onPress={() => onPick(t.id)}>
+            <Text style={styles.bookRowTitle}>{t.displayName}</Text>
+            <Text style={styles.bookRowReaders}>
+              {readings.length} {readings.length === 1 ? 'reader' : 'readers'}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </ScrollView>
+
+    <Pressable style={styles.back} onPress={onBack}>
+      <Text style={styles.backText}>← Back to settings</Text>
+    </Pressable>
+  </>
+);
+
+interface ReaderPickerViewProps {
+  bookId: string;
+  onPick: (bookId: string, readingId: string) => void;
+  onBack: () => void;
+}
+
+const ReaderPickerView: React.FC<ReaderPickerViewProps> = ({ bookId, onPick, onBack }) => {
+  const title = REGISTRY.titles.find((t) => t.id === bookId);
+  const readings = REGISTRY.readingsByTitleId[bookId] ?? [];
+
+  if (!title) {
+    return (
+      <>
+        <Text style={styles.title}>Book missing</Text>
+        <Pressable style={styles.back} onPress={onBack}>
+          <Text style={styles.backText}>← Back</Text>
+        </Pressable>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Text style={styles.title}>{title.displayName}</Text>
+      <Text style={styles.tagline}>Pick a reader</Text>
+
+      <ScrollView style={styles.steps} contentContainerStyle={styles.stepsContent}>
+        {readings.map((r) => (
+          <Pressable key={r.id} style={styles.bookRow} onPress={() => onPick(bookId, r.id)}>
+            <Text style={styles.bookRowTitle}>{r.reader}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+
+      <Pressable style={styles.back} onPress={onBack}>
+        <Text style={styles.backText}>← Back to books</Text>
+      </Pressable>
+    </>
+  );
+};
+
 const styles = StyleSheet.create({
   hotspot: {
     position: 'absolute',
-    left: 0,
-    top: 0,
     width: 120,
     height: 120,
     backgroundColor: 'transparent',
   },
+  hotspotPortrait: { left: 0, top: 0 },
+  hotspotLandscape: { left: 0, bottom: 0 },
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
@@ -342,6 +493,33 @@ const styles = StyleSheet.create({
   },
   lockdownButtonText: { color: '#7ec8ff', fontSize: 15, fontWeight: '700', textAlign: 'center' },
   lockdownButtonSubtitle: { color: '#9fc7e0', fontSize: 12, textAlign: 'center', marginTop: 2 },
+  exitBook: {
+    marginBottom: 10,
+    padding: 14,
+    borderRadius: 10,
+    backgroundColor: '#3a1c1c',
+    borderWidth: 1,
+    borderColor: '#5a2c2c',
+  },
+  exitBookText: { color: '#ff453a', fontSize: 15, fontWeight: '700', textAlign: 'center' },
+  booksButton: {
+    marginTop: 16,
+    padding: 14,
+    borderRadius: 10,
+    backgroundColor: '#1f3f2a',
+    borderWidth: 1,
+    borderColor: '#2f5a3a',
+  },
+  booksButtonText: { color: '#8ee0a7', fontSize: 15, fontWeight: '700', textAlign: 'center' },
+  booksButtonSubtitle: { color: '#9fd0a8', fontSize: 12, textAlign: 'center', marginTop: 2 },
+  bookRow: {
+    padding: 14,
+    borderRadius: 10,
+    backgroundColor: '#2c2c2e',
+    marginBottom: 8,
+  },
+  bookRowTitle: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  bookRowReaders: { color: '#aaa', fontSize: 12, marginTop: 2 },
   steps: { marginTop: 14, maxHeight: 360 },
   stepsContent: { paddingBottom: 8 },
   step: {

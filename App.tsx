@@ -4,21 +4,20 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import { ThemeProvider, useTheme } from './src/themes/ThemeProvider';
 import { AudioProvider } from './src/audio/AudioProvider';
-import { BackgroundVideo } from './src/components/BackgroundVideo';
-import { PlaySurface } from './src/components/PlaySurface';
-import { MagicButton } from './src/components/MagicButton';
+import { PlayScreen } from './src/components/PlayScreen';
 import { AdultPanel } from './src/components/AdultPanel';
 import { Greeting } from './src/components/Greeting';
 import { THEMES } from './src/themes/ThemeRegistry';
+import { AppModeProvider, useAppMode } from './src/mode/AppModeProvider';
+import { BookScreen } from './src/components/BookScreen';
 
 function Root() {
   const { theme } = useTheme();
+  const { mode } = useAppMode();
   return (
     <AudioProvider initialTheme={theme}>
       <View style={styles.root}>
-        <BackgroundVideo />
-        <PlaySurface />
-        <MagicButton />
+        {mode === 'play' ? <PlayScreen /> : <BookScreen />}
         <AdultPanel />
         <Greeting />
       </View>
@@ -36,9 +35,11 @@ export default function App() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <StatusBar hidden />
-      <ThemeProvider>
-        <Root />
-      </ThemeProvider>
+      <AppModeProvider>
+        <ThemeProvider>
+          <Root />
+        </ThemeProvider>
+      </AppModeProvider>
     </GestureHandlerRootView>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import Animated, {
   Easing,
@@ -19,6 +19,7 @@ export const Greeting: React.FC = () => {
   const opacity = useSharedValue(0);
   const [done, setDone] = useState(false);
   const { playGreeting } = useAudio();
+  const playedRef = useRef(false);
 
   // Animation runs once on mount.
   useEffect(() => {
@@ -35,7 +36,14 @@ export const Greeting: React.FC = () => {
 
   // Audio runs once on mount, delayed slightly so the audio mode has time
   // to hydrate from AsyncStorage (initial mode is 'silent' until load completes).
+  //
+  // playGreeting's identity changes whenever AudioProvider rebuilds it (e.g., a
+  // theme change replaces the music player). The playedRef guard ensures the
+  // greeting audio fires AT MOST ONCE per app launch, regardless of how many
+  // times this effect re-runs after the initial play.
   useEffect(() => {
+    if (playedRef.current) return;
+    playedRef.current = true;
     const audioTimer = setTimeout(playGreeting, 300);
     return () => clearTimeout(audioTimer);
   }, [playGreeting]);
