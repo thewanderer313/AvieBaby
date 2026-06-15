@@ -10,6 +10,7 @@ export const Library: React.FC = () => {
   const [readerFilter, setReaderFilter] = useState<string>('');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [uploadKind, setUploadKind] = useState<'image' | 'audio' | null>(null);
+  const [zoomed, setZoomed] = useState<Asset | null>(null);
 
   const refresh = () => { listAssets().then(setAssets).catch(console.error); };
   useEffect(refresh, []);
@@ -19,12 +20,18 @@ export const Library: React.FC = () => {
     Array.from(new Set(assets.filter((a): a is Asset & { type: 'audio' } => a.type === 'audio').map((a) => a.reader))).sort(),
     [assets]);
 
-  const filtered = assets.filter((a) => {
-    if (typeFilter !== 'all' && a.type !== typeFilter) return false;
-    if (sourceFilter && a.source !== sourceFilter) return false;
-    if (readerFilter && a.type === 'audio' && a.reader !== readerFilter) return false;
-    return true;
-  });
+  const filtered = assets
+    .filter((a) => {
+      if (typeFilter !== 'all' && a.type !== typeFilter) return false;
+      if (sourceFilter && a.source !== sourceFilter) return false;
+      if (readerFilter && a.type === 'audio' && a.reader !== readerFilter) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      const an = (a.originalName ?? a.id).toLowerCase();
+      const bn = (b.originalName ?? b.id).toLowerCase();
+      return an.localeCompare(bn, undefined, { numeric: true });
+    });
 
   const onDelete = async (id: string) => {
     if (!confirm(`Delete ${id}?`)) return;
@@ -43,7 +50,7 @@ export const Library: React.FC = () => {
         <button onClick={() => setUploadKind('image')} style={btnPrimary}>+ Upload images</button>
         <button onClick={() => setUploadKind('audio')} style={btnPrimary}>+ Upload audio</button>
       </div>
-      <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'center', flexWrap: 'wrap' }}>
         <label>Source:&nbsp;
           <select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)}>
             <option value="">All</option>
@@ -67,13 +74,24 @@ export const Library: React.FC = () => {
             <option value="audio">Audio</option>
           </select>
         </label>
+        <span style={{ color: '#666', fontSize: 12, marginLeft: 'auto' }}>{filtered.length} item(s)</span>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
         {filtered.map((a) => (
           <div key={a.id} style={card}>
-            <div style={{ fontFamily: 'monospace', fontSize: 12 }}>{a.id}</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <div style={{ fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {a.originalName ?? a.id}
+              </div>
+              <div style={{ fontFamily: 'monospace', fontSize: 11, color: '#888' }}>{a.id}</div>
+            </div>
             {a.type === 'image' ? (
-              <img src={`/assets/library/images/${a.filename}`} style={{ width: '100%', borderRadius: 4 }} />
+              <img
+                src={`/assets/library/images/${a.filename}`}
+                style={{ width: '100%', borderRadius: 4, cursor: 'zoom-in', objectFit: 'contain', maxHeight: 320, background: '#000' }}
+                onClick={() => setZoomed(a)}
+                title="Click to enlarge"
+              />
             ) : (
               <audio src={`/assets/library/audio/${a.filename}`} controls style={{ width: '100%' }} />
             )}
@@ -92,6 +110,19 @@ export const Library: React.FC = () => {
           onClose={() => { setUploadKind(null); refresh(); }}
         />
       )}
+      {zoomed && zoomed.type === 'image' && (
+        <div style={lightboxOverlay} onClick={() => setZoomed(null)}>
+          <img
+            src={`/assets/library/images/${zoomed.filename}`}
+            style={{ maxWidth: '95vw', maxHeight: '90vh', borderRadius: 8, background: '#000' }}
+            onClick={(e) => e.stopPropagation()}
+          />
+          <div style={lightboxCaption}>
+            {zoomed.originalName ?? zoomed.id} &nbsp;·&nbsp; <span style={{ fontFamily: 'monospace' }}>{zoomed.id}</span> &nbsp;·&nbsp; Source: {zoomed.source}
+            <button onClick={() => setZoomed(null)} style={{ marginLeft: 16 }}>Close</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -107,4 +138,13 @@ const btnPrimary: React.CSSProperties = {
 const btnDanger: React.CSSProperties = {
   padding: '6px 12px', background: '#ff3b30', color: 'white',
   border: 'none', borderRadius: 6, cursor: 'pointer',
+};
+const lightboxOverlay: React.CSSProperties = {
+  position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)',
+  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+  zIndex: 200, gap: 16, cursor: 'zoom-out',
+};
+const lightboxCaption: React.CSSProperties = {
+  color: 'white', fontSize: 14,
+  display: 'flex', alignItems: 'center',
 };

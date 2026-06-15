@@ -1,8 +1,8 @@
 export interface ImageAsset {
-  id: string; type: 'image'; source: string; filename: string;
+  id: string; type: 'image'; source: string; filename: string; originalName?: string;
 }
 export interface AudioAsset {
-  id: string; type: 'audio'; source: string; reader: string; filename: string;
+  id: string; type: 'audio'; source: string; reader: string; filename: string; originalName?: string;
 }
 export type Asset = ImageAsset | AudioAsset;
 

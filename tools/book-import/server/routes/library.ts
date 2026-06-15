@@ -46,7 +46,7 @@ export function makeLibraryRouter(repoRoot: string): express.Router {
               ).padStart(4, '0')}`;
               const outPath = path.join(repoRoot, 'assets', 'library', 'images', `${id}.png`);
               await runBookPage(repoRoot, tmpIn, outPath, job.emit);
-              lib.assets.push({ id, type: 'image', source, filename: `${id}.png` });
+              lib.assets.push({ id, type: 'image', source, filename: `${id}.png`, originalName: f.originalname });
               fs.writeFileSync(
                 path.join(repoRoot, 'assets', 'library', 'library.json'),
                 JSON.stringify(lib, null, 2) + '\n',
@@ -94,7 +94,7 @@ export function makeLibraryRouter(repoRoot: string): express.Router {
               ).padStart(4, '0')}`;
               const outPath = path.join(repoRoot, 'assets', 'library', 'audio', `${id}.mp3`);
               await runBookVoice(repoRoot, tmpIn, outPath, keepTail, job.emit);
-              lib.assets.push({ id, type: 'audio', source, reader, filename: `${id}.mp3` });
+              lib.assets.push({ id, type: 'audio', source, reader, filename: `${id}.mp3`, originalName: f.originalname });
               fs.writeFileSync(
                 path.join(repoRoot, 'assets', 'library', 'library.json'),
                 JSON.stringify(lib, null, 2) + '\n',
