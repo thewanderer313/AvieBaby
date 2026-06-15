@@ -50,14 +50,18 @@ export const ReadingEditor: React.FC<Props> = ({ reading, onClose }) => {
   const title = titles.find((t) => t.id === titleId);
 
   const imageOptions = useMemo(() =>
-    imageAssets.filter((a) => !title || a.source === title.displayName),
+    imageAssets
+      .filter((a) => !title || a.source === title.displayName)
+      .sort(byOriginalName),
   [imageAssets, title]);
 
   const audioOptions = useMemo(() =>
-    audioAssets.filter((a) =>
-      (!title || a.source === title.displayName) &&
-      (!readerName || a.reader === readerName),
-    ),
+    audioAssets
+      .filter((a) =>
+        (!title || a.source === title.displayName) &&
+        (!readerName || a.reader === readerName),
+      )
+      .sort(byOriginalName),
   [audioAssets, title, readerName]);
 
   const sensors = useSensors(
@@ -184,11 +188,15 @@ const SortableRow: React.FC<RowProps> = ({ row, index, imageOptions, audioOption
       <span style={{ minWidth: 40, fontFamily: 'monospace' }}>{index + 1}</span>
       <select value={row.image} onChange={(e) => onChange({ image: e.target.value })} style={{ flex: 1 }}>
         <option value="">— image —</option>
-        {imageOptions.map((a) => <option key={a.id} value={a.id}>{a.id} ({a.source})</option>)}
+        {imageOptions.map((a) => (
+          <option key={a.id} value={a.id}>{a.originalName ?? a.id} — {a.id}</option>
+        ))}
       </select>
       <select value={row.audio} onChange={(e) => onChange({ audio: e.target.value })} style={{ flex: 1 }}>
         <option value="">— audio —</option>
-        {audioOptions.map((a) => <option key={a.id} value={a.id}>{a.id} ({a.reader})</option>)}
+        {audioOptions.map((a) => (
+          <option key={a.id} value={a.id}>{a.originalName ?? a.id} — {a.id} ({a.reader})</option>
+        ))}
       </select>
       <button
         onClick={onRemove}
@@ -197,6 +205,12 @@ const SortableRow: React.FC<RowProps> = ({ row, index, imageOptions, audioOption
     </div>
   );
 };
+
+function byOriginalName(a: { originalName?: string; id: string }, b: { originalName?: string; id: string }): number {
+  const an = (a.originalName ?? a.id).toLowerCase();
+  const bn = (b.originalName ?? b.id).toLowerCase();
+  return an.localeCompare(bn, undefined, { numeric: true });
+}
 
 const overlay: React.CSSProperties = {
   position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',

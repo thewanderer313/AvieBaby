@@ -5,6 +5,7 @@ export interface ImageAsset {
   type: 'image';
   source: string;
   filename: string;
+  originalName?: string;
 }
 
 export interface AudioAsset {
@@ -13,6 +14,7 @@ export interface AudioAsset {
   source: string;
   reader: string;
   filename: string;
+  originalName?: string;
 }
 
 export type Asset = ImageAsset | AudioAsset;
