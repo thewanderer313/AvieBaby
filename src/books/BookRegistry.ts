@@ -3,13 +3,70 @@ import type { BookRegistry } from './types';
 
 export const REGISTRY: BookRegistry = {
   titles: [
-
+  { id: "chicka-chicka-peep-peep", displayName: "Chicka Chicka Peep Peep", cover: require('../../assets/titles/chicka-chicka-peep-peep/cover.png') },
   ],
   readingsByTitleId: {
-
+  "chicka-chicka-peep-peep": [
+    {
+      id: "rdg-0001",
+      titleId: "chicka-chicka-peep-peep",
+      reader: "Grandma",
+      pages: [
+      { image: "img-0016", audio: "aud-0016" },
+      { image: "img-0015", audio: "aud-0017" },
+      { image: "img-0014", audio: "aud-0006" },
+      { image: "img-0013", audio: "aud-0007" },
+      { image: "img-0012", audio: "aud-0008" },
+      { image: "img-0011", audio: "aud-0009" },
+      { image: "img-0010", audio: "aud-0010" },
+      { image: "img-0009", audio: "aud-0011" },
+      { image: "img-0008", audio: "aud-0014" },
+      { image: "img-0007", audio: "aud-0012" },
+      { image: "img-0006", audio: "aud-0013" },
+      { image: "img-0005", audio: "aud-0001" },
+      { image: "img-0004", audio: "aud-0002" },
+      { image: "img-0003", audio: "aud-0003" },
+      { image: "img-0002", audio: "aud-0004" },
+      { image: "img-0001", audio: "aud-0005" },
+      ],
+    },
+  ],
   },
   assets: {
-
+  'aud-0001': require('../../assets/library/audio/aud-0001.mp3'),
+  'aud-0002': require('../../assets/library/audio/aud-0002.mp3'),
+  'aud-0003': require('../../assets/library/audio/aud-0003.mp3'),
+  'aud-0004': require('../../assets/library/audio/aud-0004.mp3'),
+  'aud-0005': require('../../assets/library/audio/aud-0005.mp3'),
+  'aud-0006': require('../../assets/library/audio/aud-0006.mp3'),
+  'aud-0007': require('../../assets/library/audio/aud-0007.mp3'),
+  'aud-0008': require('../../assets/library/audio/aud-0008.mp3'),
+  'aud-0009': require('../../assets/library/audio/aud-0009.mp3'),
+  'aud-0010': require('../../assets/library/audio/aud-0010.mp3'),
+  'aud-0011': require('../../assets/library/audio/aud-0011.mp3'),
+  'aud-0012': require('../../assets/library/audio/aud-0012.mp3'),
+  'aud-0013': require('../../assets/library/audio/aud-0013.mp3'),
+  'aud-0014': require('../../assets/library/audio/aud-0014.mp3'),
+  'aud-0015': require('../../assets/library/audio/aud-0015.mp3'),
+  'aud-0016': require('../../assets/library/audio/aud-0016.mp3'),
+  'aud-0017': require('../../assets/library/audio/aud-0017.mp3'),
+  'img-0001': require('../../assets/library/images/img-0001.png'),
+  'img-0002': require('../../assets/library/images/img-0002.png'),
+  'img-0003': require('../../assets/library/images/img-0003.png'),
+  'img-0004': require('../../assets/library/images/img-0004.png'),
+  'img-0005': require('../../assets/library/images/img-0005.png'),
+  'img-0006': require('../../assets/library/images/img-0006.png'),
+  'img-0007': require('../../assets/library/images/img-0007.png'),
+  'img-0008': require('../../assets/library/images/img-0008.png'),
+  'img-0009': require('../../assets/library/images/img-0009.png'),
+  'img-0010': require('../../assets/library/images/img-0010.png'),
+  'img-0011': require('../../assets/library/images/img-0011.png'),
+  'img-0012': require('../../assets/library/images/img-0012.png'),
+  'img-0013': require('../../assets/library/images/img-0013.png'),
+  'img-0014': require('../../assets/library/images/img-0014.png'),
+  'img-0015': require('../../assets/library/images/img-0015.png'),
+  'img-0016': require('../../assets/library/images/img-0016.png'),
+  'img-0017': require('../../assets/library/images/img-0017.png'),
   },
 };
 

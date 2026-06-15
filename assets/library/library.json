@@ -1,1 +1,225 @@
-{"assets": []}
+{
+  "assets": [
+    {
+      "id": "aud-0001",
+      "type": "audio",
+      "source": "Chicka Chicka Peep Peep",
+      "reader": "Grandma",
+      "filename": "aud-0001.mp3"
+    },
+    {
+      "id": "aud-0002",
+      "type": "audio",
+      "source": "Chicka Chicka Peep Peep",
+      "reader": "Grandma",
+      "filename": "aud-0002.mp3"
+    },
+    {
+      "id": "aud-0003",
+      "type": "audio",
+      "source": "Chicka Chicka Peep Peep",
+      "reader": "Grandma",
+      "filename": "aud-0003.mp3"
+    },
+    {
+      "id": "aud-0004",
+      "type": "audio",
+      "source": "Chicka Chicka Peep Peep",
+      "reader": "Grandma",
+      "filename": "aud-0004.mp3"
+    },
+    {
+      "id": "aud-0005",
+      "type": "audio",
+      "source": "Chicka Chicka Peep Peep",
+      "reader": "Grandma",
+      "filename": "aud-0005.mp3"
+    },
+    {
+      "id": "aud-0006",
+      "type": "audio",
+      "source": "Chicka Chicka Peep Peep",
+      "reader": "Grandma",
+      "filename": "aud-0006.mp3"
+    },
+    {
+      "id": "aud-0007",
+      "type": "audio",
+      "source": "Chicka Chicka Peep Peep",
+      "reader": "Grandma",
+      "filename": "aud-0007.mp3"
+    },
+    {
+      "id": "aud-0008",
+      "type": "audio",
+      "source": "Chicka Chicka Peep Peep",
+      "reader": "Grandma",
+      "filename": "aud-0008.mp3"
+    },
+    {
+      "id": "aud-0009",
+      "type": "audio",
+      "source": "Chicka Chicka Peep Peep",
+      "reader": "Grandma",
+      "filename": "aud-0009.mp3"
+    },
+    {
+      "id": "aud-0010",
+      "type": "audio",
+      "source": "Chicka Chicka Peep Peep",
+      "reader": "Grandma",
+      "filename": "aud-0010.mp3"
+    },
+    {
+      "id": "aud-0011",
+      "type": "audio",
+      "source": "Chicka Chicka Peep Peep",
+      "reader": "Grandma",
+      "filename": "aud-0011.mp3"
+    },
+    {
+      "id": "aud-0012",
+      "type": "audio",
+      "source": "Chicka Chicka Peep Peep",
+      "reader": "Grandma",
+      "filename": "aud-0012.mp3"
+    },
+    {
+      "id": "aud-0013",
+      "type": "audio",
+      "source": "Chicka Chicka Peep Peep",
+      "reader": "Grandma",
+      "filename": "aud-0013.mp3"
+    },
+    {
+      "id": "aud-0014",
+      "type": "audio",
+      "source": "Chicka Chicka Peep Peep",
+      "reader": "Grandma",
+      "filename": "aud-0014.mp3"
+    },
+    {
+      "id": "aud-0015",
+      "type": "audio",
+      "source": "Chicka Chicka Peep Peep",
+      "reader": "Grandma",
+      "filename": "aud-0015.mp3"
+    },
+    {
+      "id": "aud-0016",
+      "type": "audio",
+      "source": "Chicka Chicka Peep Peep",
+      "reader": "Grandma",
+      "filename": "aud-0016.mp3"
+    },
+    {
+      "id": "aud-0017",
+      "type": "audio",
+      "source": "Chicka Chicka Peep Peep",
+      "reader": "Grandma",
+      "filename": "aud-0017.mp3"
+    },
+    {
+      "id": "img-0001",
+      "type": "image",
+      "source": "Chicka Chicka Peep Peep",
+      "filename": "img-0001.png"
+    },
+    {
+      "id": "img-0002",
+      "type": "image",
+      "source": "Chicka Chicka Peep Peep",
+      "filename": "img-0002.png"
+    },
+    {
+      "id": "img-0003",
+      "type": "image",
+      "source": "Chicka Chicka Peep Peep",
+      "filename": "img-0003.png"
+    },
+    {
+      "id": "img-0004",
+      "type": "image",
+      "source": "Chicka Chicka Peep Peep",
+      "filename": "img-0004.png"
+    },
+    {
+      "id": "img-0005",
+      "type": "image",
+      "source": "Chicka Chicka Peep Peep",
+      "filename": "img-0005.png"
+    },
+    {
+      "id": "img-0006",
+      "type": "image",
+      "source": "Chicka Chicka Peep Peep",
+      "filename": "img-0006.png"
+    },
+    {
+      "id": "img-0007",
+      "type": "image",
+      "source": "Chicka Chicka Peep Peep",
+      "filename": "img-0007.png"
+    },
+    {
+      "id": "img-0008",
+      "type": "image",
+      "source": "Chicka Chicka Peep Peep",
+      "filename": "img-0008.png"
+    },
+    {
+      "id": "img-0009",
+      "type": "image",
+      "source": "Chicka Chicka Peep Peep",
+      "filename": "img-0009.png"
+    },
+    {
+      "id": "img-0010",
+      "type": "image",
+      "source": "Chicka Chicka Peep Peep",
+      "filename": "img-0010.png"
+    },
+    {
+      "id": "img-0011",
+      "type": "image",
+      "source": "Chicka Chicka Peep Peep",
+      "filename": "img-0011.png"
+    },
+    {
+      "id": "img-0012",
+      "type": "image",
+      "source": "Chicka Chicka Peep Peep",
+      "filename": "img-0012.png"
+    },
+    {
+      "id": "img-0013",
+      "type": "image",
+      "source": "Chicka Chicka Peep Peep",
+      "filename": "img-0013.png"
+    },
+    {
+      "id": "img-0014",
+      "type": "image",
+      "source": "Chicka Chicka Peep Peep",
+      "filename": "img-0014.png"
+    },
+    {
+      "id": "img-0015",
+      "type": "image",
+      "source": "Chicka Chicka Peep Peep",
+      "filename": "img-0015.png"
+    },
+    {
+      "id": "img-0016",
+      "type": "image",
+      "source": "Chicka Chicka Peep Peep",
+      "filename": "img-0016.png"
+    },
+    {
+      "id": "img-0017",
+      "type": "image",
+      "source": "Chicka Chicka Peep Peep",
+      "filename": "img-0017.png"
+    }
+  ]
+}

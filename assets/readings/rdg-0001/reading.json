@@ -1,0 +1,71 @@
+{
+  "id": "rdg-0001",
+  "titleId": "chicka-chicka-peep-peep",
+  "reader": "Grandma",
+  "pages": [
+    {
+      "image": "img-0016",
+      "audio": "aud-0016"
+    },
+    {
+      "image": "img-0015",
+      "audio": "aud-0017"
+    },
+    {
+      "image": "img-0014",
+      "audio": "aud-0006"
+    },
+    {
+      "image": "img-0013",
+      "audio": "aud-0007"
+    },
+    {
+      "image": "img-0012",
+      "audio": "aud-0008"
+    },
+    {
+      "image": "img-0011",
+      "audio": "aud-0009"
+    },
+    {
+      "image": "img-0010",
+      "audio": "aud-0010"
+    },
+    {
+      "image": "img-0009",
+      "audio": "aud-0011"
+    },
+    {
+      "image": "img-0008",
+      "audio": "aud-0014"
+    },
+    {
+      "image": "img-0007",
+      "audio": "aud-0012"
+    },
+    {
+      "image": "img-0006",
+      "audio": "aud-0013"
+    },
+    {
+      "image": "img-0005",
+      "audio": "aud-0001"
+    },
+    {
+      "image": "img-0004",
+      "audio": "aud-0002"
+    },
+    {
+      "image": "img-0003",
+      "audio": "aud-0003"
+    },
+    {
+      "image": "img-0002",
+      "audio": "aud-0004"
+    },
+    {
+      "image": "img-0001",
+      "audio": "aud-0005"
+    }
+  ]
+}
