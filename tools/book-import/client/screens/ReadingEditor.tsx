@@ -4,8 +4,8 @@ import {
   createReading, updateReading,
 } from '../api';
 import {
-  DndContext, closestCenter, KeyboardSensor, PointerSensor,
-  useSensor, useSensors, DragEndEvent,
+  DndContext, KeyboardSensor, PointerSensor, pointerWithin,
+  useSensor, useSensors, DragEndEvent, useDroppable, useDraggable, DragOverlay, DragStartEvent,
 } from '@dnd-kit/core';
 import {
   arrayMove, SortableContext, sortableKeyboardCoordinates,
@@ -27,6 +27,9 @@ interface Row {
 let rowSeq = 0;
 const makeRowId = () => `row-${++rowSeq}`;
 
+const PAGE_PREFIX = 'page-';
+const AUDIO_PREFIX = 'audio-';
+
 export const ReadingEditor: React.FC<Props> = ({ reading, onClose }) => {
   const isNew = !reading;
   const [titles, setTitles] = useState<TitleGroup[]>([]);
@@ -38,6 +41,7 @@ export const ReadingEditor: React.FC<Props> = ({ reading, onClose }) => {
     reading?.pages.map((p) => ({ rowId: makeRowId(), image: p.image, audio: p.audio })) ?? [],
   );
   const [busy, setBusy] = useState(false);
+  const [activeAudioId, setActiveAudioId] = useState<string | null>(null);
 
   useEffect(() => {
     listTitles().then(setTitles).catch(console.error);
@@ -64,17 +68,49 @@ export const ReadingEditor: React.FC<Props> = ({ reading, onClose }) => {
       .sort(byOriginalName),
   [audioAssets, title, readerName]);
 
+  const imageById = useMemo(
+    () => Object.fromEntries(imageAssets.map((a) => [a.id, a])) as Record<string, ImageAsset>,
+    [imageAssets],
+  );
+  const audioById = useMemo(
+    () => Object.fromEntries(audioAssets.map((a) => [a.id, a])) as Record<string, AudioAsset>,
+    [audioAssets],
+  );
+
+  const usedAudioIds = useMemo(() => new Set(rows.map((r) => r.audio).filter(Boolean)), [rows]);
+
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  const onDragStart = (event: DragStartEvent) => {
+    const id = String(event.active.id);
+    if (id.startsWith(AUDIO_PREFIX)) {
+      setActiveAudioId(id.slice(AUDIO_PREFIX.length));
+    }
+  };
+
   const onDragEnd = (event: DragEndEvent) => {
+    setActiveAudioId(null);
     const { active, over } = event;
-    if (over && active.id !== over.id) {
+    if (!over) return;
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
+    if (activeId.startsWith(AUDIO_PREFIX) && overId.startsWith(PAGE_PREFIX)) {
+      const audioId = activeId.slice(AUDIO_PREFIX.length);
+      const rowId = overId.slice(PAGE_PREFIX.length);
+      setRows((rs) => rs.map((r) => (r.rowId === rowId ? { ...r, audio: audioId } : r)));
+      return;
+    }
+
+    if (activeId.startsWith(PAGE_PREFIX) && overId.startsWith(PAGE_PREFIX) && activeId !== overId) {
+      const oldId = activeId.slice(PAGE_PREFIX.length);
+      const newId = overId.slice(PAGE_PREFIX.length);
       setRows((rs) => {
-        const oldIdx = rs.findIndex((r) => r.rowId === active.id);
-        const newIdx = rs.findIndex((r) => r.rowId === over.id);
+        const oldIdx = rs.findIndex((r) => r.rowId === oldId);
+        const newIdx = rs.findIndex((r) => r.rowId === newId);
         return arrayMove(rs, oldIdx, newIdx);
       });
     }
@@ -108,8 +144,8 @@ export const ReadingEditor: React.FC<Props> = ({ reading, onClose }) => {
   return (
     <div style={overlay}>
       <div style={modal}>
-        <h2>{isNew ? 'New reading' : `Edit reading ${reading!.id}`}</h2>
-        <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+        <h2 style={{ margin: '0 0 12px' }}>{isNew ? 'New reading' : `Edit reading ${reading!.id}`}</h2>
+        <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
           <label style={{ flex: 1 }}>Title:<br/>
             <select value={titleId} onChange={(e) => setTitleId(e.target.value)} style={{ width: '100%' }}>
               <option value="">— pick title —</option>
@@ -120,25 +156,67 @@ export const ReadingEditor: React.FC<Props> = ({ reading, onClose }) => {
             <input value={readerName} onChange={(e) => setReaderName(e.target.value)} style={{ width: '100%' }} />
           </label>
         </div>
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-          <SortableContext items={rows.map((r) => r.rowId)} strategy={verticalListSortingStrategy}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 400, overflow: 'auto' }}>
-              {rows.map((row, idx) => (
-                <SortableRow
-                  key={row.rowId}
-                  row={row}
-                  index={idx}
-                  imageOptions={imageOptions}
-                  audioOptions={audioOptions}
-                  onChange={(patch) => updateRow(row.rowId, patch)}
-                  onRemove={() => removeRow(row.rowId)}
-                />
-              ))}
+
+        <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 16, alignItems: 'flex-start' }}>
+            {/* Pages column */}
+            <div>
+              <div style={{ fontSize: 13, color: '#666', marginBottom: 8 }}>
+                Pages ({rows.length}) — drag audio cards from the right onto a page to pair them
+              </div>
+              <SortableContext items={rows.map((r) => PAGE_PREFIX + r.rowId)} strategy={verticalListSortingStrategy}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '60vh', overflow: 'auto', paddingRight: 4 }}>
+                  {rows.map((row, idx) => (
+                    <PageCard
+                      key={row.rowId}
+                      row={row}
+                      index={idx}
+                      image={row.image ? imageById[row.image] : undefined}
+                      audio={row.audio ? audioById[row.audio] : undefined}
+                      imageOptions={imageOptions}
+                      audioOptions={audioOptions}
+                      onChange={(patch) => updateRow(row.rowId, patch)}
+                      onRemove={() => removeRow(row.rowId)}
+                    />
+                  ))}
+                  {rows.length === 0 && (
+                    <div style={{ padding: 16, border: '1px dashed #ccc', borderRadius: 8, color: '#888', textAlign: 'center' }}>
+                      No pages yet. Click "+ Add page" below to start.
+                    </div>
+                  )}
+                </div>
+              </SortableContext>
+              <button onClick={addRow} style={{ marginTop: 12 }}>+ Add page</button>
             </div>
-          </SortableContext>
+
+            {/* Audio library column */}
+            <aside style={{ position: 'sticky', top: 0 }}>
+              <div style={{ fontSize: 13, color: '#666', marginBottom: 8 }}>
+                Audio library ({audioOptions.length}) — drag onto a page
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: '60vh', overflow: 'auto', paddingRight: 4 }}>
+                {audioOptions.map((a) => (
+                  <DraggableAudioCard
+                    key={a.id}
+                    asset={a}
+                    used={usedAudioIds.has(a.id)}
+                  />
+                ))}
+                {audioOptions.length === 0 && (
+                  <div style={{ padding: 12, color: '#888', fontSize: 12 }}>
+                    {title && readerName ? 'No audio matches this title + reader yet.' : 'Pick a title and reader to see matching audio.'}
+                  </div>
+                )}
+              </div>
+            </aside>
+          </div>
+
+          <DragOverlay>
+            {activeAudioId ? <AudioDragGhost asset={audioById[activeAudioId]} /> : null}
+          </DragOverlay>
         </DndContext>
-        <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-          <button onClick={addRow}>+ Add page</button>
+
+        <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
           <div style={{ flex: 1 }} />
           <button onClick={onClose} disabled={busy}>Cancel</button>
           <button
@@ -154,54 +232,152 @@ export const ReadingEditor: React.FC<Props> = ({ reading, onClose }) => {
   );
 };
 
-interface RowProps {
+interface PageCardProps {
   row: Row;
   index: number;
+  image?: ImageAsset;
+  audio?: AudioAsset;
   imageOptions: ImageAsset[];
   audioOptions: AudioAsset[];
   onChange: (patch: Partial<Row>) => void;
   onRemove: () => void;
 }
 
-const SortableRow: React.FC<RowProps> = ({ row, index, imageOptions, audioOptions, onChange, onRemove }) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: row.rowId });
+const PageCard: React.FC<PageCardProps> = ({ row, index, image, audio, imageOptions, audioOptions, onChange, onRemove }) => {
+  const sortableId = PAGE_PREFIX + row.rowId;
+  const { attributes, listeners, setNodeRef: setSortableRef, transform, transition, isDragging } = useSortable({ id: sortableId });
+  const { isOver, setNodeRef: setDropRef } = useDroppable({ id: sortableId });
+
+  const ref = (node: HTMLElement | null) => {
+    setSortableRef(node);
+    setDropRef(node);
+  };
+
+  return (
+    <div
+      ref={ref}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        display: 'grid',
+        gridTemplateColumns: 'auto 200px 1fr auto',
+        gap: 12,
+        alignItems: 'center',
+        padding: 12,
+        background: isOver ? '#e6f3ff' : (isDragging ? '#f0f4ff' : '#f8f8fa'),
+        border: isOver ? '2px solid #0a84ff' : '2px solid transparent',
+        borderRadius: 8,
+      }}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+        <button
+          {...attributes}
+          {...listeners}
+          aria-label={`Drag handle page ${index + 1}`}
+          style={{ cursor: 'grab', padding: '4px 8px', background: 'transparent', border: 'none', fontSize: 18 }}
+        >☰</button>
+        <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{index + 1}</span>
+      </div>
+
+      {image ? (
+        <img
+          src={`/assets/library/images/${image.filename}`}
+          style={{ width: 200, height: 150, objectFit: 'contain', background: '#000', borderRadius: 4 }}
+          title={image.originalName ?? image.id}
+        />
+      ) : (
+        <div style={{ width: 200, height: 150, background: '#eee', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888', fontSize: 12 }}>
+          No image
+        </div>
+      )}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <select value={row.image} onChange={(e) => onChange({ image: e.target.value })} style={{ width: '100%' }}>
+          <option value="">— pick image —</option>
+          {imageOptions.map((a) => (
+            <option key={a.id} value={a.id}>{a.originalName ?? a.id}</option>
+          ))}
+        </select>
+        {audio ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: 6, background: '#e8f5e9', borderRadius: 4 }}>
+            <span style={{ flex: 1, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {audio.originalName ?? audio.id}
+            </span>
+            <audio src={`/assets/library/audio/${audio.filename}`} controls style={{ height: 28 }} />
+            <button onClick={() => onChange({ audio: '' })} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 16 }} title="Unlink audio">✕</button>
+          </div>
+        ) : (
+          <select value={row.audio} onChange={(e) => onChange({ audio: e.target.value })} style={{ width: '100%' }}>
+            <option value="">— drop audio here or pick —</option>
+            {audioOptions.map((a) => (
+              <option key={a.id} value={a.id}>{a.originalName ?? a.id}</option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      <button
+        onClick={onRemove}
+        style={{ background: '#ff3b30', color: 'white', border: 'none', borderRadius: 4, padding: '4px 8px', alignSelf: 'flex-start' }}
+        title="Remove this page from the reading"
+      >×</button>
+    </div>
+  );
+};
+
+interface DraggableAudioCardProps {
+  asset: AudioAsset;
+  used: boolean;
+}
+
+const DraggableAudioCard: React.FC<DraggableAudioCardProps> = ({ asset, used }) => {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: AUDIO_PREFIX + asset.id });
   return (
     <div
       ref={setNodeRef}
       style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
         display: 'flex',
-        gap: 8,
         alignItems: 'center',
+        gap: 6,
         padding: 8,
-        background: isDragging ? '#f0f4ff' : '#f8f8fa',
+        background: used ? '#f0f0f0' : 'white',
+        border: '1px solid #ddd',
         borderRadius: 6,
+        opacity: isDragging ? 0.4 : (used ? 0.6 : 1),
       }}
     >
-      <button
+      <span
         {...attributes}
         {...listeners}
-        aria-label={`Drag handle page ${index + 1}`}
-        style={{ cursor: 'grab', padding: '4px 8px', background: 'transparent', border: 'none' }}
-      >☰</button>
-      <span style={{ minWidth: 40, fontFamily: 'monospace' }}>{index + 1}</span>
-      <select value={row.image} onChange={(e) => onChange({ image: e.target.value })} style={{ flex: 1 }}>
-        <option value="">— image —</option>
-        {imageOptions.map((a) => (
-          <option key={a.id} value={a.id}>{a.originalName ?? a.id} — {a.id}</option>
-        ))}
-      </select>
-      <select value={row.audio} onChange={(e) => onChange({ audio: e.target.value })} style={{ flex: 1 }}>
-        <option value="">— audio —</option>
-        {audioOptions.map((a) => (
-          <option key={a.id} value={a.id}>{a.originalName ?? a.id} — {a.id} ({a.reader})</option>
-        ))}
-      </select>
-      <button
-        onClick={onRemove}
-        style={{ background: '#ff3b30', color: 'white', border: 'none', borderRadius: 4, padding: '4px 8px' }}
-      >×</button>
+        style={{ cursor: 'grab', padding: '2px 6px', fontSize: 14 }}
+        aria-label={`Drag ${asset.originalName ?? asset.id}`}
+        title="Drag onto a page to pair"
+      >☰</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {asset.originalName ?? asset.id}
+        </div>
+        {used && <div style={{ fontSize: 10, color: '#888' }}>already paired</div>}
+      </div>
+      <audio src={`/assets/library/audio/${asset.filename}`} controls style={{ height: 24, maxWidth: 140 }} />
+    </div>
+  );
+};
+
+const AudioDragGhost: React.FC<{ asset?: AudioAsset }> = ({ asset }) => {
+  if (!asset) return null;
+  return (
+    <div style={{
+      padding: 8,
+      background: '#0a84ff',
+      color: 'white',
+      borderRadius: 6,
+      fontSize: 12,
+      fontWeight: 600,
+      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+      whiteSpace: 'nowrap',
+    }}>
+      {asset.originalName ?? asset.id}
     </div>
   );
 };
@@ -218,5 +394,5 @@ const overlay: React.CSSProperties = {
 };
 const modal: React.CSSProperties = {
   background: 'white', borderRadius: 12, padding: 24,
-  width: 'min(900px, 95vw)', maxHeight: '90vh', overflow: 'auto',
+  width: 'min(1200px, 95vw)', maxHeight: '95vh', overflow: 'auto',
 };
