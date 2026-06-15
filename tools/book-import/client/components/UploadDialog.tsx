@@ -97,7 +97,7 @@ export const UploadDialog: React.FC<Props> = ({ kind, existingSources, existingR
               <button type="submit" disabled={busy}>{busy ? 'Uploading…' : 'Upload'}</button>
             </div>
             {events.length > 0 && (
-              <pre style={progressStyle}>{events.map((e) => `${e.step}: ${e.status}`).join('\n')}</pre>
+              <pre style={progressStyle}>{formatEvents(events)}</pre>
             )}
           </form>
         ) : (
@@ -111,6 +111,19 @@ export const UploadDialog: React.FC<Props> = ({ kind, existingSources, existingR
     </div>
   );
 };
+
+function formatEvents(events: PipelineEvent[]): string {
+  return events
+    .map((e) => {
+      const head = `${e.step}: ${e.status}`;
+      if (e.status === 'failed' && (e.stderr || e.stdout)) {
+        const detail = (e.stderr || e.stdout || '').trim();
+        return `${head}\n${detail}`;
+      }
+      return head;
+    })
+    .join('\n');
+}
 
 const overlay: React.CSSProperties = {
   position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
