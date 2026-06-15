@@ -42,6 +42,7 @@ export const ReadingEditor: React.FC<Props> = ({ reading, onClose }) => {
   );
   const [busy, setBusy] = useState(false);
   const [activeAudioId, setActiveAudioId] = useState<string | null>(null);
+  const [zoomed, setZoomed] = useState<ImageAsset | null>(null);
 
   useEffect(() => {
     listTitles().then(setTitles).catch(console.error);
@@ -177,6 +178,7 @@ export const ReadingEditor: React.FC<Props> = ({ reading, onClose }) => {
                       audioOptions={audioOptions}
                       onChange={(patch) => updateRow(row.rowId, patch)}
                       onRemove={() => removeRow(row.rowId)}
+                      onZoomImage={(img) => setZoomed(img)}
                     />
                   ))}
                   {rows.length === 0 && (
@@ -216,6 +218,20 @@ export const ReadingEditor: React.FC<Props> = ({ reading, onClose }) => {
           </DragOverlay>
         </DndContext>
 
+        {zoomed && (
+          <div style={lightboxOverlay} onClick={() => setZoomed(null)}>
+            <img
+              src={`/assets/library/images/${zoomed.filename}`}
+              style={{ maxWidth: '95vw', maxHeight: '85vh', borderRadius: 8, background: '#000' }}
+              onClick={(e) => e.stopPropagation()}
+            />
+            <div style={lightboxCaption}>
+              {zoomed.originalName ?? zoomed.id} &nbsp;·&nbsp; <span style={{ fontFamily: 'monospace' }}>{zoomed.id}</span>
+              <button onClick={() => setZoomed(null)} style={{ marginLeft: 16 }}>Close</button>
+            </div>
+          </div>
+        )}
+
         <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
           <div style={{ flex: 1 }} />
           <button onClick={onClose} disabled={busy}>Cancel</button>
@@ -241,9 +257,10 @@ interface PageCardProps {
   audioOptions: AudioAsset[];
   onChange: (patch: Partial<Row>) => void;
   onRemove: () => void;
+  onZoomImage: (image: ImageAsset) => void;
 }
 
-const PageCard: React.FC<PageCardProps> = ({ row, index, image, audio, imageOptions, audioOptions, onChange, onRemove }) => {
+const PageCard: React.FC<PageCardProps> = ({ row, index, image, audio, imageOptions, audioOptions, onChange, onRemove, onZoomImage }) => {
   const sortableId = PAGE_PREFIX + row.rowId;
   const { attributes, listeners, setNodeRef: setSortableRef, transform, transition, isDragging } = useSortable({ id: sortableId });
   const { isOver, setNodeRef: setDropRef } = useDroppable({ id: sortableId });
@@ -282,8 +299,9 @@ const PageCard: React.FC<PageCardProps> = ({ row, index, image, audio, imageOpti
       {image ? (
         <img
           src={`/assets/library/images/${image.filename}`}
-          style={{ width: 200, height: 150, objectFit: 'contain', background: '#000', borderRadius: 4 }}
-          title={image.originalName ?? image.id}
+          style={{ width: 200, height: 150, objectFit: 'contain', background: '#000', borderRadius: 4, cursor: 'zoom-in' }}
+          title={`${image.originalName ?? image.id} — click to enlarge`}
+          onClick={(e) => { e.stopPropagation(); onZoomImage(image); }}
         />
       ) : (
         <div style={{ width: 200, height: 150, background: '#eee', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888', fontSize: 12 }}>
@@ -391,6 +409,15 @@ function byOriginalName(a: { originalName?: string; id: string }, b: { originalN
 const overlay: React.CSSProperties = {
   position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
   display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100,
+};
+const lightboxOverlay: React.CSSProperties = {
+  position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)',
+  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+  zIndex: 300, gap: 16, cursor: 'zoom-out',
+};
+const lightboxCaption: React.CSSProperties = {
+  color: 'white', fontSize: 14,
+  display: 'flex', alignItems: 'center',
 };
 const modal: React.CSSProperties = {
   background: 'white', borderRadius: 12, padding: 24,
