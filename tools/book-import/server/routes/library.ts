@@ -4,7 +4,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {
-  loadLibrary, deleteAsset, setAssetArchived,
+  loadLibrary, deleteAsset, setAssetArchived, renameAsset,
   AssetNotFoundError, AssetInUseError,
 } from '../library.js';
 import { readingsReferencingAsset } from '../readings.js';
@@ -116,11 +116,20 @@ export function makeLibraryRouter(repoRoot: string): express.Router {
 
   r.patch('/:id', express.json(), async (req, res, next) => {
     try {
-      const { archived } = req.body ?? {};
-      if (typeof archived !== 'boolean') {
-        return res.status(400).json({ error: 'archived (boolean) required' });
+      const { archived, originalName } = req.body ?? {};
+      const hasArchived = typeof archived === 'boolean';
+      const hasName = typeof originalName === 'string';
+      if (!hasArchived && !hasName) {
+        return res.status(400).json({ error: 'archived (boolean) or originalName (string) required' });
       }
-      const asset = await withLibraryLock(() => setAssetArchived(repoRoot, req.params.id, archived));
+      if (hasName && originalName.trim().length === 0) {
+        return res.status(400).json({ error: 'originalName cannot be empty' });
+      }
+      let asset = null;
+      await withLibraryLock(async () => {
+        if (hasArchived) asset = await setAssetArchived(repoRoot, req.params.id, archived);
+        if (hasName) asset = await renameAsset(repoRoot, req.params.id, originalName.trim());
+      });
       res.json({ asset });
     } catch (err) {
       if (err instanceof AssetNotFoundError) return res.status(404).json({ error: err.message });

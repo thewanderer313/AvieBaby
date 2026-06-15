@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Asset, listAssets, deleteAsset, setAssetArchived } from '../api';
+import { Asset, listAssets, deleteAsset, setAssetArchived, renameAsset } from '../api';
 import { UploadDialog } from '../components/UploadDialog';
 
 type TypeFilter = 'all' | 'image' | 'audio';
@@ -12,6 +12,8 @@ export const Library: React.FC = () => {
   const [showArchived, setShowArchived] = useState(false);
   const [uploadKind, setUploadKind] = useState<'image' | 'audio' | null>(null);
   const [zoomed, setZoomed] = useState<Asset | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingDraft, setEditingDraft] = useState<string>('');
 
   const refresh = () => { listAssets().then(setAssets).catch(console.error); };
   useEffect(refresh, []);
@@ -49,6 +51,25 @@ export const Library: React.FC = () => {
   const onToggleArchive = async (a: Asset) => {
     try { await setAssetArchived(a.id, !a.archived); refresh(); }
     catch (err: any) { alert(`Archive toggle failed: ${err.message}`); }
+  };
+
+  const startEdit = (a: Asset) => {
+    setEditingId(a.id);
+    setEditingDraft(a.originalName ?? a.id);
+  };
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditingDraft('');
+  };
+  const saveEdit = async (a: Asset) => {
+    const next = editingDraft.trim();
+    if (!next) { alert('Name cannot be empty'); return; }
+    if (next === (a.originalName ?? a.id)) { cancelEdit(); return; }
+    try {
+      await renameAsset(a.id, next);
+      cancelEdit();
+      refresh();
+    } catch (err: any) { alert(`Rename failed: ${err.message}`); }
   };
 
   return (
@@ -93,14 +114,43 @@ export const Library: React.FC = () => {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
         {filtered.map((a) => (
           <div key={a.id} style={{ ...card, opacity: a.archived ? 0.6 : 1, borderColor: a.archived ? '#bbb' : '#ddd' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                {a.originalName ?? a.id}
-              </div>
-              {a.archived && (
-                <span style={{ fontSize: 10, padding: '2px 6px', background: '#888', color: 'white', borderRadius: 4 }}>ARCHIVED</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+              {editingId === a.id ? (
+                <>
+                  <input
+                    autoFocus
+                    value={editingDraft}
+                    onChange={(e) => setEditingDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveEdit(a);
+                      if (e.key === 'Escape') cancelEdit();
+                    }}
+                    style={{ flex: 1, fontSize: 14, padding: '4px 6px' }}
+                  />
+                  <button onClick={() => saveEdit(a)} style={{ fontSize: 12, padding: '4px 8px' }}>Save</button>
+                  <button onClick={cancelEdit} style={{ fontSize: 12, padding: '4px 8px' }}>Cancel</button>
+                </>
+              ) : (
+                <>
+                  <div
+                    style={{ fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, cursor: 'pointer' }}
+                    title="Click to rename"
+                    onClick={() => startEdit(a)}
+                  >
+                    {a.originalName ?? a.id}
+                  </div>
+                  <button
+                    onClick={() => startEdit(a)}
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 14, padding: 0 }}
+                    title="Rename"
+                    aria-label="Rename"
+                  >✎</button>
+                  {a.archived && (
+                    <span style={{ fontSize: 10, padding: '2px 6px', background: '#888', color: 'white', borderRadius: 4 }}>ARCHIVED</span>
+                  )}
+                  <div style={{ fontFamily: 'monospace', fontSize: 11, color: '#888' }}>{a.id}</div>
+                </>
               )}
-              <div style={{ fontFamily: 'monospace', fontSize: 11, color: '#888' }}>{a.id}</div>
             </div>
             {a.type === 'image' ? (
               <img

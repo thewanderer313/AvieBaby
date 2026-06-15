@@ -103,3 +103,17 @@ export async function setAssetArchived(
   writeLibraryAtomic(repoRoot, lib);
   return next;
 }
+
+export async function renameAsset(
+  repoRoot: string,
+  id: string,
+  originalName: string,
+): Promise<Asset> {
+  const lib = loadLibrary(repoRoot);
+  const idx = lib.assets.findIndex((a) => a.id === id);
+  if (idx === -1) throw new AssetNotFoundError(`No asset with id ${id}`);
+  const next = { ...lib.assets[idx], originalName } as Asset;
+  lib.assets[idx] = next;
+  writeLibraryAtomic(repoRoot, lib);
+  return next;
+}
