@@ -89,3 +89,17 @@ export async function deleteAsset(
 export function findAsset(lib: LibraryFile, id: string): Asset | null {
   return lib.assets.find((a) => a.id === id) ?? null;
 }
+
+export async function setAssetArchived(
+  repoRoot: string,
+  id: string,
+  archived: boolean,
+): Promise<Asset> {
+  const lib = loadLibrary(repoRoot);
+  const idx = lib.assets.findIndex((a) => a.id === id);
+  if (idx === -1) throw new AssetNotFoundError(`No asset with id ${id}`);
+  const next = { ...lib.assets[idx], archived } as Asset;
+  lib.assets[idx] = next;
+  writeLibraryAtomic(repoRoot, lib);
+  return next;
+}

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Asset, listAssets, deleteAsset } from '../api';
+import { Asset, listAssets, deleteAsset, setAssetArchived } from '../api';
 import { UploadDialog } from '../components/UploadDialog';
 
 type TypeFilter = 'all' | 'image' | 'audio';
@@ -9,6 +9,7 @@ export const Library: React.FC = () => {
   const [sourceFilter, setSourceFilter] = useState<string>('');
   const [readerFilter, setReaderFilter] = useState<string>('');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
+  const [showArchived, setShowArchived] = useState(false);
   const [uploadKind, setUploadKind] = useState<'image' | 'audio' | null>(null);
   const [zoomed, setZoomed] = useState<Asset | null>(null);
 
@@ -22,6 +23,7 @@ export const Library: React.FC = () => {
 
   const filtered = assets
     .filter((a) => {
+      if (!showArchived && a.archived) return false;
       if (typeFilter !== 'all' && a.type !== typeFilter) return false;
       if (sourceFilter && a.source !== sourceFilter) return false;
       if (readerFilter && a.type === 'audio' && a.reader !== readerFilter) return false;
@@ -42,6 +44,11 @@ export const Library: React.FC = () => {
         alert(`Cannot delete — referenced by readings: ${refs}`);
       } else alert(`Delete failed: ${err.message}`);
     }
+  };
+
+  const onToggleArchive = async (a: Asset) => {
+    try { await setAssetArchived(a.id, !a.archived); refresh(); }
+    catch (err: any) { alert(`Archive toggle failed: ${err.message}`); }
   };
 
   return (
@@ -74,15 +81,25 @@ export const Library: React.FC = () => {
             <option value="audio">Audio</option>
           </select>
         </label>
+        <label style={{ marginLeft: 8 }}>
+          <input
+            type="checkbox"
+            checked={showArchived}
+            onChange={(e) => setShowArchived(e.target.checked)}
+          /> Show archived
+        </label>
         <span style={{ color: '#666', fontSize: 12, marginLeft: 'auto' }}>{filtered.length} item(s)</span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
         {filtered.map((a) => (
-          <div key={a.id} style={card}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <div style={{ fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div key={a.id} style={{ ...card, opacity: a.archived ? 0.6 : 1, borderColor: a.archived ? '#bbb' : '#ddd' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                 {a.originalName ?? a.id}
               </div>
+              {a.archived && (
+                <span style={{ fontSize: 10, padding: '2px 6px', background: '#888', color: 'white', borderRadius: 4 }}>ARCHIVED</span>
+              )}
               <div style={{ fontFamily: 'monospace', fontSize: 11, color: '#888' }}>{a.id}</div>
             </div>
             {a.type === 'image' ? (
@@ -97,7 +114,12 @@ export const Library: React.FC = () => {
             )}
             <div style={{ fontSize: 13 }}>Source: {a.source}</div>
             {a.type === 'audio' && <div style={{ fontSize: 13 }}>Reader: {a.reader}</div>}
-            <button onClick={() => onDelete(a.id)} style={btnDanger}>Delete</button>
+            <div style={{ display: 'flex', gap: 4 }}>
+              <button onClick={() => onToggleArchive(a)} style={btnSecondary}>
+                {a.archived ? 'Unarchive' : 'Archive'}
+              </button>
+              <button onClick={() => onDelete(a.id)} style={btnDanger}>Delete</button>
+            </div>
           </div>
         ))}
         {filtered.length === 0 && <div style={{ gridColumn: '1/-1', color: '#666' }}>No assets match.</div>}
@@ -133,6 +155,10 @@ const card: React.CSSProperties = {
 };
 const btnPrimary: React.CSSProperties = {
   padding: '8px 16px', background: '#0a84ff', color: 'white',
+  border: 'none', borderRadius: 6, cursor: 'pointer',
+};
+const btnSecondary: React.CSSProperties = {
+  padding: '6px 12px', background: '#e5e5ea', color: '#111',
   border: 'none', borderRadius: 6, cursor: 'pointer',
 };
 const btnDanger: React.CSSProperties = {

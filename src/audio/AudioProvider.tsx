@@ -28,7 +28,7 @@ export const AudioProvider: React.FC<{ initialTheme: Theme; children: React.Reac
 }) => {
   const controllerRef = useRef(new AudioController('silent'));
   const duckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const bookAudioRef = useRef<{ remove: () => void } | null>(null);
+  const bookAudioRef = useRef<{ pause: () => void; remove: () => void } | null>(null);
   const [mode, setModeState] = useState<AudioMode>('silent');
   const [currentMusicSource, setCurrentMusicSource] = useState<number>(() => {
     const idx = controllerRef.current.pickTrackIndex(initialTheme.id);
@@ -127,7 +127,10 @@ export const AudioProvider: React.FC<{ initialTheme: Theme; children: React.Reac
 
   const playBookPage = useCallback((source: number) => {
     // Cancel any in-flight book audio before starting the next one.
+    // pause() first so playback stops immediately; remove() is async and
+    // can otherwise let the previous clip bleed into the next page's audio.
     if (bookAudioRef.current) {
+      try { bookAudioRef.current.pause(); } catch {}
       try { bookAudioRef.current.remove(); } catch {}
       bookAudioRef.current = null;
     }
