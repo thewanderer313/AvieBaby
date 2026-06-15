@@ -32,7 +32,7 @@
     "test": "jest",
     "typecheck": "tsc --noEmit",
     "book-tool": "cd tools/book-import && npm run dev",
-    "publish-update": "node scripts/book-register.js && eas update --channel preview"
+    "publish-update": "node scripts/book-register.js && npx eas-cli update --channel preview"
   },
   "private": true
 }
