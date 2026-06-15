@@ -9,6 +9,7 @@ import { AdultPanel } from './src/components/AdultPanel';
 import { Greeting } from './src/components/Greeting';
 import { THEMES } from './src/themes/ThemeRegistry';
 import { AppModeProvider, useAppMode } from './src/mode/AppModeProvider';
+import { BookProvider } from './src/books/BookProvider';
 import { BookScreen } from './src/components/BookScreen';
 
 function Root() {
@@ -37,7 +38,9 @@ export default function App() {
       <StatusBar hidden />
       <AppModeProvider>
         <ThemeProvider>
-          <Root />
+          <BookProvider>
+            <Root />
+          </BookProvider>
         </ThemeProvider>
       </AppModeProvider>
     </GestureHandlerRootView>
