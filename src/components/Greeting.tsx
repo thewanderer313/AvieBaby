@@ -56,7 +56,7 @@ export const Greeting: React.FC = () => {
     <Animated.View pointerEvents="none" style={[styles.wrap, style]}>
       <Animated.View style={styles.card}>
         <Text style={styles.title}>Hi Ava!</Text>
-        <Text style={styles.subtitle}>Made just for you</Text>
+        <Text style={styles.subtitle}>An app made just for you ♥</Text>
       </Animated.View>
     </Animated.View>
   );
