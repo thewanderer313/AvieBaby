@@ -68,6 +68,15 @@ export async function setAssetArchived(id: string, archived: boolean): Promise<A
   return (await json<{ asset: Asset }>(res)).asset;
 }
 
+export async function renameAsset(id: string, originalName: string): Promise<Asset> {
+  const res = await fetch(`/api/library/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ originalName }),
+  });
+  return (await json<{ asset: Asset }>(res)).asset;
+}
+
 export async function listTitles(): Promise<TitleGroup[]> {
   return (await json<{ titles: TitleGroup[] }>(await fetch('/api/titles'))).titles;
 }
