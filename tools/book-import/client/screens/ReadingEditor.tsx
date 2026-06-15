@@ -54,11 +54,20 @@ export const ReadingEditor: React.FC<Props> = ({ reading, onClose }) => {
 
   const title = titles.find((t) => t.id === titleId);
 
+  // Ids currently referenced by any row — kept visible even if archived so
+  // the user can still see and unpair what's in their reading.
+  const referencedIds = useMemo(() => {
+    const s = new Set<string>();
+    for (const r of rows) { if (r.image) s.add(r.image); if (r.audio) s.add(r.audio); }
+    return s;
+  }, [rows]);
+
   const imageOptions = useMemo(() =>
     imageAssets
       .filter((a) => !title || a.source === title.displayName)
+      .filter((a) => !a.archived || referencedIds.has(a.id))
       .sort(byOriginalName),
-  [imageAssets, title]);
+  [imageAssets, title, referencedIds]);
 
   const audioOptions = useMemo(() =>
     audioAssets
@@ -66,8 +75,9 @@ export const ReadingEditor: React.FC<Props> = ({ reading, onClose }) => {
         (!title || a.source === title.displayName) &&
         (!readerName || a.reader === readerName),
       )
+      .filter((a) => !a.archived || referencedIds.has(a.id))
       .sort(byOriginalName),
-  [audioAssets, title, readerName]);
+  [audioAssets, title, readerName, referencedIds]);
 
   const imageById = useMemo(
     () => Object.fromEntries(imageAssets.map((a) => [a.id, a])) as Record<string, ImageAsset>,

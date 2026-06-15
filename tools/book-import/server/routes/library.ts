@@ -4,7 +4,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {
-  loadLibrary, deleteAsset,
+  loadLibrary, deleteAsset, setAssetArchived,
   AssetNotFoundError, AssetInUseError,
 } from '../library.js';
 import { readingsReferencingAsset } from '../readings.js';
@@ -113,6 +113,20 @@ export function makeLibraryRouter(repoRoot: string): express.Router {
       }
     },
   );
+
+  r.patch('/:id', express.json(), async (req, res, next) => {
+    try {
+      const { archived } = req.body ?? {};
+      if (typeof archived !== 'boolean') {
+        return res.status(400).json({ error: 'archived (boolean) required' });
+      }
+      const asset = await withLibraryLock(() => setAssetArchived(repoRoot, req.params.id, archived));
+      res.json({ asset });
+    } catch (err) {
+      if (err instanceof AssetNotFoundError) return res.status(404).json({ error: err.message });
+      next(err);
+    }
+  });
 
   r.delete('/:id', async (req, res, next) => {
     try {

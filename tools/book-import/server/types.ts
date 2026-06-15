@@ -6,6 +6,7 @@ export interface ImageAsset {
   source: string;
   filename: string;
   originalName?: string;
+  archived?: boolean;
 }
 
 export interface AudioAsset {
@@ -15,6 +16,7 @@ export interface AudioAsset {
   reader: string;
   filename: string;
   originalName?: string;
+  archived?: boolean;
 }
 
 export type Asset = ImageAsset | AudioAsset;

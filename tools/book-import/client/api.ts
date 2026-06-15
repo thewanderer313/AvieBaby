@@ -1,8 +1,8 @@
 export interface ImageAsset {
-  id: string; type: 'image'; source: string; filename: string; originalName?: string;
+  id: string; type: 'image'; source: string; filename: string; originalName?: string; archived?: boolean;
 }
 export interface AudioAsset {
-  id: string; type: 'audio'; source: string; reader: string; filename: string; originalName?: string;
+  id: string; type: 'audio'; source: string; reader: string; filename: string; originalName?: string; archived?: boolean;
 }
 export type Asset = ImageAsset | AudioAsset;
 
@@ -57,6 +57,15 @@ export async function uploadAudio(
 export async function deleteAsset(id: string): Promise<void> {
   const res = await fetch(`/api/library/${id}`, { method: 'DELETE' });
   await json(res);
+}
+
+export async function setAssetArchived(id: string, archived: boolean): Promise<Asset> {
+  const res = await fetch(`/api/library/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ archived }),
+  });
+  return (await json<{ asset: Asset }>(res)).asset;
 }
 
 export async function listTitles(): Promise<TitleGroup[]> {
