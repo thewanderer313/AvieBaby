@@ -23,12 +23,29 @@
 
 ## Phase plan
 
-- **Phase 1** (Tasks 1–5): Code + config changes (AUTO)
-- **Phase 2** (Tasks 6–7): EAS account link and update configure (MANUAL — Ryan, with detailed runbook)
-- **Phase 3** (Tasks 8–10): First Android binary + OTA cycle verification (MANUAL — Ryan)
-- **Phase 4** (Tasks 11–13): iOS TestFlight + first family tester (wife) (MANUAL — Ryan)
-- **Phase 5** (Task 14): Rest-of-family rollout (MANUAL — Ryan)
-- **Phase 6** (Task 15): Documentation refinement (AUTO, after Ryan reports findings)
+- **Phase 1** (Tasks 1–5): Code + config changes (AUTO) — **DONE**
+- **Phase 2** (Tasks 6–7): EAS account link and update configure (MANUAL) — **DONE**
+- **Phase 3** (Tasks 8–10): First Android binary + OTA cycle verification (MANUAL) — **DONE** (one mid-flight policy change — see Lessons learned below)
+- **Phase 4** (Tasks 11–13): iOS TestFlight + first family tester (wife) (MANUAL) — **NEXT SESSION**
+- **Phase 5** (Task 14): Rest-of-family rollout (MANUAL) — pending
+- **Phase 6** (Task 15): Documentation refinement (AUTO) — pending
+
+## Lessons learned during Phase 3
+
+**The originally-specced `runtimeVersion: { policy: "fingerprint" }` was too sensitive.** Even a one-line edit to `src/components/Greeting.tsx` produced a new fingerprint, which made OTA updates unable to apply to the installed binary (binary fingerprint and update fingerprint diverged). Two diagnostic build/publish cycles confirmed the drift.
+
+**Fix:** switched `app.json`'s `runtimeVersion` policy to `appVersion`. Runtime version is now literally the `version` field from `app.json` (currently `"0.1.0"`). Every binary and every update built at that version are mutually compatible. Bumping the version field is the deliberate "everyone needs a new binary" signal.
+
+Committed in `d8b2fda` ("fix(ota): switch to appVersion runtimeVersion policy"). Followed by a fresh Android binary build that uses the new policy. OTA loop verified end-to-end with that binary plus a subsequent JS-only update.
+
+**Forward implication:** When iOS work begins (Task 11), the same policy applies — the iOS binary will run `runtimeVersion = "0.1.0"`, and updates published to the preview channel will reach both iOS and Android binaries simultaneously (subject to the existing per-platform JS bundle in each update group).
+
+**Other gotchas worth carrying forward:**
+
+- The `publish-update` npm script must use `npx eas-cli`, not bare `eas` — fixed in `5ff734d`. The user shouldn't need a global eas-cli install.
+- The `eas-cli init` workflow auto-added `android.permissions` to `app.json` with duplicate entries (RECORD_AUDIO, MODIFY_AUDIO_SETTINGS, FOREGROUND_SERVICE, FOREGROUND_SERVICE_MEDIA_PLAYBACK each appeared twice). Deduplicated in the same commit as the runtimeVersion fix. iOS Phase 4 work might re-trigger something similar — if `app.json` grows weird duplicates after `eas` commands, dedup them.
+- `eas-cli update:list` requires `--branch preview` (or another branch flag). Calling it without one errors out with `"Branch name may not be empty."`
+- The user's preview Android binary is at commit `068dbb0` with runtime version `ff50f3182…370093` (now invalid under the new policy — the next rebuilt binary will use `"0.1.0"` instead).
 
 ---
 
