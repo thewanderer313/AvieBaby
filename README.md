@@ -221,16 +221,18 @@ Produces `assets/icon.png`, `assets/splash-icon.png`, `assets/android-icon-foreg
 
 ## Publishing updates to family (OTA)
 
-> **Status:** Designed in `docs/superpowers/specs/2026-06-13-ota-and-distribution-design.md`. Implementation pending.
+> **Status:** Live on Android (Ryan's preview APK). Verified end-to-end with the `preview` channel. iOS TestFlight setup is the next step before family rollout.
 
-Once OTA is wired up, adding a book on your machine will land on Kristen's phone (and any other family member's) without a re-install:
+Adding a book on your machine lands on family members' phones without a re-install:
 
 ```bash
 node scripts/book-register.js
-eas update --channel preview --message "Added Goodnight Moon (Mom)"
+npx eas-cli update --channel preview --message "Added Goodnight Moon (Mom)"
 ```
 
 (Wrapped into one npm script: `npm run publish-update -- --message "..."`)
+
+**Runtime version policy is `appVersion`** — see `app.json`'s `runtimeVersion: { policy: "appVersion" }`. Every binary and every update built at the current `version` (`"0.1.0"`) are mutually compatible. Bumping the `version` field is the deliberate "everyone needs a new binary" signal.
 
 How it works at runtime:
 
@@ -406,7 +408,7 @@ The app handles its own exit gate, but the strongest lock is the OS-level one. S
 
 ## Distribution to family (binary builds)
 
-> **Status:** Designed in `docs/superpowers/specs/2026-06-13-ota-and-distribution-design.md`. Implementation pending.
+> **Status:** Android preview APK is live on Ryan's phone — first real binary distribution done. iOS TestFlight setup is the next step; family rollout follows after that.
 
 ### iOS — TestFlight
 
