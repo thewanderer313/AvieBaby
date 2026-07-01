@@ -34,16 +34,24 @@ Commit the `app.json` changes after.
 
 ### iOS (TestFlight)
 
-1. From your machine, kick off the build:
+**Use the `preview-ios` profile, NOT `preview`.** The `preview` profile is `distribution: internal`, which for iOS means an ad-hoc build that needs every device's UDID registered and *cannot* be submitted to TestFlight. `preview-ios` (`distribution: store`, extends `preview` so it keeps `channel: preview` and the same OTA loop) produces a TestFlight-submittable build with no UDIDs required — testers are invited by email.
+
+1. **Run the first build in a real terminal, not through any tooling/agent.** First-time iOS credential setup (Distribution Certificate + Provisioning Profile) requires an interactive TTY. Non-interactive shells fail with *"Run this command again in interactive mode."* Open Windows Terminal / PowerShell in the repo and run:
    ```bash
-   eas build --platform ios --profile preview --auto-submit
+   npx eas-cli build --platform ios --profile preview-ios --auto-submit
    ```
-2. Wait ~30–45 minutes for the cloud build. Then ~10–15 minutes for Apple to process the upload. Watch the URL the CLI prints, or visit `https://expo.dev/accounts/<you>/projects/aviebaby/builds`.
-3. Visit https://appstoreconnect.apple.com → AvieBaby → TestFlight → External Testing.
-4. If the **Family** group doesn't exist yet, create it.
-5. Add the tester's Apple ID email to the group.
-6. **First build only**: Apple does a one-time Beta App Review (~24 hours, sometimes faster). Subsequent builds within the same major version skip this review.
-7. Tester receives an email invite. They install the free **TestFlight** app from the App Store, tap the invite link in the email, and AvieBaby installs.
+   When prompted: log in to your Apple account (Apple ID + 2FA), let **EAS manage credentials**, and say **Yes** to generating the Distribution Certificate / Provisioning Profile and registering the bundle id.
+2. **Apple account gates (first time only).** New submissions can be blocked until, at https://developer.apple.com/account (as Account Holder), you accept the current **Apple Developer Program License Agreement**, and in App Store Connect you provide **DSA trader status** (an individual shipping a free family app can declare *non-trader*). If either is outstanding, the build succeeds but `--auto-submit` fails — clear them, then submit separately (step 3).
+3. **If auto-submit fails but the build succeeded**, don't rebuild — submit the finished build on its own (needs the `submit.preview-ios` profile in `eas.json`):
+   ```bash
+   npx eas-cli submit --platform ios --profile preview-ios --latest
+   ```
+4. Wait ~30–45 minutes for the cloud build, then ~10–15 minutes for Apple to process the upload. Watch the URL the CLI prints, or visit `https://expo.dev/accounts/<you>/projects/aviebaby/builds`.
+5. Visit https://appstoreconnect.apple.com → AvieBaby → TestFlight.
+6. **Smoke-test first:** add your own Apple ID as an **Internal** tester — internal testers install immediately, no review.
+7. Under **External Testing**, create the **Family** group if it doesn't exist, and add the tester's email to it.
+8. **First external build only**: Apple does a one-time Beta App Review (~24 hours, sometimes faster). Subsequent builds within the same major version skip this review. Internal testers are unaffected by this review.
+9. Tester receives an email invite. They install the free **TestFlight** app from the App Store, tap the invite link in the email, and AvieBaby installs. (See the ready-to-send message under "Message to send a new tester" below.)
 
 ### Android (direct APK)
 
@@ -57,6 +65,25 @@ Commit the `app.json` changes after.
 5. APK installs.
 
 There's no store involvement. No "internal track" paperwork, no Play Console enrollment.
+
+---
+
+## Message to send a new tester (iOS)
+
+Copy-paste and personalize this when inviting a family member:
+
+> Hi! I made a little app for Ava and I'd love you to put it on your phone. It's called **AvieBaby**. Here's how:
+>
+> 1. First install Apple's **TestFlight** app from the App Store (it's free — it's just how Apple lets people try apps before they're public).
+> 2. You'll get an **email invite from Apple** (check spam if you don't see it). Tap **"View in TestFlight"** — or tap the link I text you.
+> 3. In TestFlight, tap **Install** next to AvieBaby.
+> 4. Open it like any normal app from your home screen. That's it! 💛
+>
+> A few things to know:
+> - It's completely safe — it's just Ava's play-and-books app, no ads, no sign-in, nothing collected.
+> - **To open the grown-up settings:** press and hold the **top-left corner** for about 2 seconds.
+> - I'll be adding new books and features over time — they'll show up automatically next time you fully close and reopen the app, no reinstalling needed.
+> - If anything looks off or won't install, just text me a screenshot.
 
 ---
 
@@ -93,7 +120,7 @@ A toddler-driven device usually hits both within hours. Worst-case, a few days i
 TestFlight builds disappear from testers' devices after 90 days. Set a calendar reminder every ~85 days:
 
 ```bash
-eas build --platform ios --profile preview --auto-submit
+npx eas-cli build --platform ios --profile preview-ios --auto-submit
 ```
 
 Cached OTA books survive the binary refresh — testers don't lose any state.
@@ -112,10 +139,11 @@ You need a fresh binary build (and family must re-install) when:
 - Modifying any `app.json` field that affects native config (bundle id, icon paths, splash, plugins list, etc.)
 - Editing any native code under `ios/` or `android/` (we don't have any custom native code today, but if you ever add some)
 
-For any of those:
+For any of those, rebuild each platform with its own profile (iOS and Android use different distribution methods, so there's no single `--platform all` command):
 
 ```bash
-eas build --platform all --profile preview --auto-submit
+npx eas-cli build --platform android --profile preview               # sideload APK
+npx eas-cli build --platform ios --profile preview-ios --auto-submit  # TestFlight
 ```
 
 Then share the new Android APK link. iOS testers get the new build automatically through TestFlight (after the ~10 minute Apple processing).
@@ -194,9 +222,10 @@ node scripts/book-register.js && eas update --channel preview --message "your me
 | `npx eas-cli login` | One-time browser auth to your Expo account |
 | `npx eas-cli init` | One-time link of this repo to an EAS project |
 | `npx eas-cli update:configure` | One-time write of updates URL into app.json |
-| `eas build --platform <ios\|android\|all> --profile preview` | Cloud-builds binaries; ~30 minutes |
-| `eas build --platform ios --profile preview --auto-submit` | Build iOS + upload to App Store Connect for TestFlight |
+| `eas build --platform android --profile preview` | Cloud-builds the sideload APK; ~30 minutes |
+| `eas build --platform ios --profile preview-ios --auto-submit` | Build iOS (store distribution) + upload to App Store Connect for TestFlight |
+| `eas submit --platform ios --profile preview-ios --latest` | Submit the latest finished iOS build to TestFlight (if `--auto-submit` was skipped or failed) |
 | `eas update --channel preview --message "..."` | Publish OTA update to the preview channel |
 | `npm run publish-update -- --message "..."` | Regenerate book registry + publish OTA in one step |
 | `npx eas-cli update:list --channel preview` | List recent OTA updates on the preview channel |
-| `npx eas-cli credentials --platform ios --profile preview` | Inspect / repair iOS signing credentials |
+| `npx eas-cli credentials --platform ios --profile preview-ios` | Inspect / repair iOS signing credentials |
