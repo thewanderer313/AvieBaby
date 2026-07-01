@@ -28,6 +28,7 @@
     }
   },
   "submit": {
+    "preview-ios": {},
     "production": {}
   }
 }
