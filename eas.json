@@ -15,6 +15,13 @@
         "simulator": false
       }
     },
+    "preview-ios": {
+      "extends": "preview",
+      "distribution": "store",
+      "ios": {
+        "simulator": false
+      }
+    },
     "production": {
       "channel": "production",
       "autoIncrement": true
